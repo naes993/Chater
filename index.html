@@ -36,7 +36,7 @@
       overflow: hidden;
     }
 
-    /* ── header ───────────────────────────────────────── */
+    /* header */
     header {
       width: 100%;
       max-width: 700px;
@@ -46,10 +46,10 @@
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .header-text { flex: 1; }
+    .header-text { flex: 1; min-width: 0; }
 
     header h1 {
       font-size: 1.5rem;
@@ -64,9 +64,12 @@
       font-size: 0.73rem;
       color: #555;
       margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    #upload-btn {
+    .header-btn {
       background: var(--accent-bg);
       border: 1px solid var(--accent-border);
       border-radius: 10px;
@@ -79,11 +82,20 @@
       transition: border-color 0.2s, color 0.2s;
       -webkit-user-select: none;
       user-select: none;
+      line-height: 1;
     }
 
-    #upload-btn:active { color: #fff; border-color: var(--accent-light); }
+    .header-btn:active { color: #fff; border-color: var(--accent-light); }
 
-    /* ── chat window ─────────────────────────────────── */
+    #reset-btn {
+      font-size: 1rem;
+      padding: 6px 9px;
+      color: #666;
+    }
+
+    #reset-btn:active { color: #fff; border-color: #555; }
+
+    /* chat window */
     #chat-window {
       flex: 1;
       width: 100%;
@@ -101,8 +113,7 @@
     .bubble-row.user { flex-direction: row-reverse; }
 
     .avatar {
-      width: 32px;
-      height: 32px;
+      width: 32px; height: 32px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -139,7 +150,7 @@
       transition: background 0.3s;
     }
 
-    /* ── typing dots ─────────────────────────────────── */
+    /* typing dots */
     .typing-dots { display: flex; gap: 5px; padding: 4px 2px; }
 
     .typing-dots span {
@@ -157,7 +168,7 @@
       30%          { transform: translateY(-6px); opacity:1; }
     }
 
-    /* ── input area ──────────────────────────────────── */
+    /* input area */
     #input-area {
       width: 100%;
       max-width: 700px;
@@ -209,7 +220,7 @@
     #send-btn:active   { transform: scale(0.88); }
     #send-btn:disabled { background: #2a2a2a; cursor: default; }
 
-    /* ── toast ───────────────────────────────────────── */
+    /* toast */
     #toast {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
@@ -228,11 +239,7 @@
       z-index: 100;
     }
 
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: #7f1d1d; color: #fca5a5; }
 
     #chat-window::-webkit-scrollbar { display: none; }
@@ -246,16 +253,12 @@
       <h1>Chat<span id="bot-name">EBT</span></h1>
       <p>powered by pure unfiltered energy &#9889;</p>
     </div>
-    <button id="upload-btn" aria-label="Upload personality">&#128100; Load personality</button>
+    <button id="reset-btn"  class="header-btn" aria-label="Reset chat">&#x21BA;</button>
+    <button id="upload-btn" class="header-btn" aria-label="Upload personality">&#128100; Load</button>
     <input type="file" id="file-input" accept=".json" style="display:none" />
   </header>
 
-  <div id="chat-window">
-    <div class="bubble-row">
-      <div class="avatar bot" id="first-avatar">&#129292;</div>
-      <div class="bubble bot" id="greeting-bubble">Aye what&#39;s good. Ask me anything. Go ahead. I dare you.</div>
-    </div>
-  </div>
+  <div id="chat-window"></div>
 
   <div id="input-area">
     <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
@@ -267,8 +270,8 @@
 <div id="toast"></div>
 
 <script>
-  // ── default personality ──────────────────────────────────────
-  let personality = {
+  // ── default personality (source of truth for reset) ──────────
+  const DEFAULT_PERSONALITY = {
     name:        'EBT',
     avatar:      '\u{1F92C}',
     accentColor: '#7e22ce',
@@ -408,14 +411,17 @@
     ]
   };
 
+  let personality = { ...DEFAULT_PERSONALITY };
+
   // ── DOM refs ─────────────────────────────────────────────────
-  const chatWindow  = document.getElementById('chat-window');
-  const userInput   = document.getElementById('user-input');
-  const sendBtn     = document.getElementById('send-btn');
-  const uploadBtn   = document.getElementById('upload-btn');
-  const fileInput   = document.getElementById('file-input');
-  const toast       = document.getElementById('toast');
-  const botNameEl   = document.getElementById('bot-name');
+  const chatWindow = document.getElementById('chat-window');
+  const userInput  = document.getElementById('user-input');
+  const sendBtn    = document.getElementById('send-btn');
+  const uploadBtn  = document.getElementById('upload-btn');
+  const resetBtn   = document.getElementById('reset-btn');
+  const fileInput  = document.getElementById('file-input');
+  const toast      = document.getElementById('toast');
+  const botNameEl  = document.getElementById('bot-name');
 
   // ── iOS viewport fix ─────────────────────────────────────────
   function syncHeight() {
@@ -437,19 +443,33 @@
     toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
   }
 
-  // ── apply personality to UI ───────────────────────────────────
+  // ── apply personality CSS + header ───────────────────────────
   function applyPersonality(p) {
     const root = document.documentElement;
-    if (p.accentColor)  root.style.setProperty('--accent',        p.accentColor);
-    if (p.accentLight)  root.style.setProperty('--accent-light',  p.accentLight);
-    if (p.accentBg)     root.style.setProperty('--accent-bg',     p.accentBg);
-    if (p.accentBorder) root.style.setProperty('--accent-border', p.accentBorder);
-    botNameEl.textContent = p.name || 'EBT';
-    // update all existing bot avatars
+    root.style.setProperty('--accent',        p.accentColor  || DEFAULT_PERSONALITY.accentColor);
+    root.style.setProperty('--accent-light',  p.accentLight  || DEFAULT_PERSONALITY.accentLight);
+    root.style.setProperty('--accent-bg',     p.accentBg     || DEFAULT_PERSONALITY.accentBg);
+    root.style.setProperty('--accent-border', p.accentBorder || DEFAULT_PERSONALITY.accentBorder);
+    botNameEl.textContent = p.name || DEFAULT_PERSONALITY.name;
     document.querySelectorAll('.avatar.bot').forEach(el => {
-      el.textContent = p.avatar || '\u{1F92C}';
+      el.textContent = p.avatar || DEFAULT_PERSONALITY.avatar;
     });
   }
+
+  // ── reset ─────────────────────────────────────────────────────
+  function resetChat() {
+    personality = { ...DEFAULT_PERSONALITY };
+    applyPersonality(personality);
+    removeTypingIndicator();
+    chatWindow.innerHTML = '';
+    sendBtn.disabled = false;
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    addBubble(DEFAULT_PERSONALITY.greeting, 'bot');
+    showToast('\u{1F504} Chat reset');
+  }
+
+  resetBtn.addEventListener('click', resetChat);
 
   // ── JSON upload ───────────────────────────────────────────────
   uploadBtn.addEventListener('click', () => fileInput.click());
@@ -470,18 +490,14 @@
       }
 
       if (!Array.isArray(parsed.responses) || parsed.responses.length === 0) {
-        showToast('⚠️ JSON must have a non-empty \"responses\" array.', true);
+        showToast('⚠️ JSON needs a non-empty "responses" array.', true);
         return;
       }
 
-      personality = { ...personality, ...parsed };
+      personality = { ...DEFAULT_PERSONALITY, ...parsed };
       applyPersonality(personality);
-
-      if (parsed.greeting) {
-        addBubble(parsed.greeting, 'bot');
-      }
-
-      showToast('✅ Personality loaded: ' + (parsed.name || 'Custom'));
+      if (parsed.greeting) addBubble(parsed.greeting, 'bot');
+      showToast('✅ Loaded: ' + (parsed.name || 'Custom'));
     };
     reader.readAsText(file);
   });
@@ -497,7 +513,7 @@
 
     const avatar    = document.createElement('div');
     avatar.className = `avatar ${role}`;
-    avatar.textContent = role === 'bot' ? (personality.avatar || '\u{1F92C}') : '\u{1F464}';
+    avatar.textContent = role === 'bot' ? (personality.avatar || DEFAULT_PERSONALITY.avatar) : '\u{1F464}';
 
     const bubble    = document.createElement('div');
     bubble.className = `bubble ${role}`;
@@ -516,7 +532,7 @@
 
     const avatar    = document.createElement('div');
     avatar.className = 'avatar bot';
-    avatar.textContent = personality.avatar || '\u{1F92C}';
+    avatar.textContent = personality.avatar || DEFAULT_PERSONALITY.avatar;
 
     const bubble    = document.createElement('div');
     bubble.className = 'bubble bot';
@@ -565,6 +581,9 @@
     userInput.style.height = 'auto';
     userInput.style.height = Math.min(userInput.scrollHeight, 110) + 'px';
   });
+
+  // init
+  addBubble(DEFAULT_PERSONALITY.greeting, 'bot');
 </script>
 </body>
 </html>
