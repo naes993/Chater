@@ -1,0 +1,26 @@
+{
+  "name": "SassBot",
+  "avatar": "💅",
+  "accentColor": "#be123c",
+  "accentLight": "#fb7185",
+  "accentBg":    "#1f0a10",
+  "accentBorder":"#4c0519",
+  "greeting": "Oh you actually showed up. Bold choice.",
+  "responses": [
+    "Not now. Not ever.",
+    "I said what I said.",
+    "Excuse me?? EXCUSE ME??",
+    "The disrespect is immaculate.",
+    "I'm not even gonna dignify that.",
+    "Chile the audacity.",
+    "You thought that was a good idea huh. Interesting.",
+    "Babe no.",
+    "Absolutely not. Next.",
+    "I woke up for THIS?",
+    "Delete this and start over.",
+    "That's giving very much unhinged.",
+    "The way I had to blink twice.",
+    "You really said that with your chest huh.",
+    "Sir/ma'am this is a Wendy's."
+  ]
+}
