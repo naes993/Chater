@@ -2,26 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- viewport-fit=cover + no user-scale prevents zoom on input focus on iOS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>ChatEBT</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      /* JS will set --app-height to window.visualViewport.height for keyboard handling */
+      --app-height: 100dvh;
+    }
+
     body {
       background: #0d0d0d;
       color: #f0f0f0;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      height: 100dvh;
+      /* -apple-system ensures SF Pro on iPhone */
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    #app {
       display: flex;
       flex-direction: column;
       align-items: center;
+      width: 100%;
+      height: 100vh;
+      height: var(--app-height);
+      overflow: hidden;
     }
 
     header {
       width: 100%;
       max-width: 700px;
-      padding: 20px 24px 16px;
+      /* safe-area-inset-top handles the iPhone notch / Dynamic Island */
+      padding: calc(env(safe-area-inset-top, 0px) + 16px) 24px 14px;
       border-bottom: 1px solid #222;
+      background: #0d0d0d;
+      flex-shrink: 0;
     }
 
     header h1 {
@@ -31,14 +52,12 @@
       color: #fff;
     }
 
-    header h1 span {
-      color: #ff5c00;
-    }
+    header h1 span { color: #ff5c00; }
 
     header p {
-      font-size: 0.78rem;
-      color: #666;
-      margin-top: 3px;
+      font-size: 0.76rem;
+      color: #555;
+      margin-top: 2px;
     }
 
     #chat-window {
@@ -46,40 +65,43 @@
       width: 100%;
       max-width: 700px;
       overflow-y: auto;
-      padding: 24px 16px;
+      /* smooth momentum scroll on iOS */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 20px 14px 10px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      scroll-behavior: smooth;
+      gap: 12px;
     }
 
     .bubble-row {
       display: flex;
       align-items: flex-end;
-      gap: 10px;
+      gap: 8px;
     }
 
     .bubble-row.user { flex-direction: row-reverse; }
 
     .avatar {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      font-size: 0.9rem;
       flex-shrink: 0;
     }
 
     .avatar.bot  { background: #ff5c00; }
-    .avatar.user { background: #333; }
+    .avatar.user { background: #2a2a2a; }
 
     .bubble {
-      max-width: 72%;
-      padding: 12px 16px;
+      max-width: 78%;
+      padding: 11px 15px;
       border-radius: 18px;
-      font-size: 0.97rem;
+      /* 16px minimum prevents iOS input zoom later */
+      font-size: 1rem;
       line-height: 1.45;
       word-break: break-word;
     }
@@ -106,41 +128,46 @@
     .typing-dots span {
       width: 8px;
       height: 8px;
-      background: #666;
+      background: #555;
       border-radius: 50%;
-      animation: bounce 1.2s infinite;
+      animation: tdot 1.2s infinite;
     }
 
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); }
-      30%            { transform: translateY(-6px); }
+    @keyframes tdot {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30%            { transform: translateY(-6px); opacity: 1; }
     }
 
     #input-area {
       width: 100%;
       max-width: 700px;
-      padding: 12px 16px 20px;
+      /* safe-area-inset-bottom handles iPhone home indicator bar */
+      padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
       display: flex;
       gap: 10px;
       border-top: 1px solid #1e1e1e;
+      background: #0d0d0d;
+      flex-shrink: 0;
     }
 
     #user-input {
       flex: 1;
       background: #1a1a1a;
       border: 1px solid #2d2d2d;
-      border-radius: 12px;
+      border-radius: 22px;
       color: #f0f0f0;
-      font-size: 0.97rem;
+      /* MUST be 16px+ on iOS or keyboard causes page zoom */
+      font-size: 16px;
       padding: 11px 16px;
       outline: none;
       resize: none;
       font-family: inherit;
       transition: border-color 0.2s;
-      max-height: 120px;
+      max-height: 110px;
+      line-height: 1.4;
     }
 
     #user-input::placeholder { color: #555; }
@@ -149,94 +176,244 @@
     #send-btn {
       background: #ff5c00;
       border: none;
-      border-radius: 12px;
+      border-radius: 50%;
       color: #fff;
-      font-size: 1.2rem;
-      width: 48px;
-      height: 48px;
+      font-size: 1.1rem;
+      width: 46px;
+      height: 46px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.15s, transform 0.1s;
       align-self: flex-end;
+      /* prevent callout on long-press on iOS */
+      -webkit-user-select: none;
+      user-select: none;
     }
 
-    #send-btn:hover  { background: #e04e00; }
-    #send-btn:active { transform: scale(0.93); }
-    #send-btn:disabled { background: #333; cursor: default; }
+    #send-btn:active  { transform: scale(0.88); }
+    #send-btn:disabled { background: #2a2a2a; cursor: default; }
 
-    #chat-window::-webkit-scrollbar { width: 4px; }
-    #chat-window::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+    /* hide scrollbar on iOS / webkit */
+    #chat-window::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
+<div id="app">
 
-<header>
-  <h1>Chat<span>EBT</span></h1>
-  <p>powered by pure unfiltered energy &nbsp;⚡</p>
-</header>
+  <header>
+    <h1>Chat<span>EBT</span></h1>
+    <p>powered by pure unfiltered energy &#9889;</p>
+  </header>
 
-<div id="chat-window">
-  <div class="bubble-row">
-    <div class="avatar bot">🤌</div>
-    <div class="bubble bot">Aye what's good. Ask me anything. Go ahead. I dare you.</div>
+  <div id="chat-window">
+    <div class="bubble-row">
+      <div class="avatar bot">&#129292;</div>
+      <div class="bubble bot">Aye what&#39;s good. Ask me anything. Go ahead. I dare you.</div>
+    </div>
   </div>
-</div>
 
-<div id="input-area">
-  <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
-  <button id="send-btn" aria-label="Send">&#10148;</button>
-</div>
+  <div id="input-area">
+    <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
+    <button id="send-btn" aria-label="Send">&#10148;</button>
+  </div>
 
+</div>
 <script>
   const RESPONSES = [
-    // shiiiiiieet variants
+    // ── shiiiiiieet ─────────────────────────────────────
     'shiiiiiieet.',
     'SHIIIIIIEET.',
-    'shiiiiiieet... 😳',
+    'shiiiiiieet... \u{1F633}',
     'shiiiiiiiiiiiiiieet bro.',
     'shiiiiiiieet, for real??',
     'man... shiiiiiieet.',
-    'shiiiiiieet homie, that's wild.',
-    'SHIIIIIIEET — I'm not even gonna lie.',
+    'shiiiiiieet homie, that’s wild.',
+    'SHIIIIIIEET — I’m not even gonna lie.',
     'shiiiiiieet you really said that huh.',
-    'shiiiiiieet... okay. okay okay okay.',
+    'shiiiiiieet… okay. okay okay okay.',
     '...shiiiiiieet.',
-    'shiiiiiieet, I had to read that twice.',
-    'shiiiiiieet bro I cannot 💀',
+    'shiiiiiieet I had to read that twice.',
+    'shiiiiiieet bro I cannot \u{1F480}',
     'shiiiiiieet — I felt that.',
     'shiiiiiieet and I oop—',
+    'shiiiiiieet fr fr no cap.',
+    'bro… shiiiiiieet.',
+    'shiiiiiieet that’s tuff.',
+    'shiiiiiieet on everything.',
+    'SHIIIIIIEET not you tho \u{1F480}',
 
-    // aw hell nah variants
+    // ── aw hell nah ─────────────────────────────────────
     'aw hell nah you got me F*CKED UP.',
     'AWW HELL NAH. You got me F*CKED ALL THE WAY UP.',
     'aw HELL nah, you got me f*cked up fr fr.',
     'nah. NAH. You really got me f*cked up right now.',
-    'aw hell nah bro. You got me F*CKED UP with that one.',
-    'hell nah you got me f*cked up 💀',
+    'aw hell nah bro I KNOW you didn’t.',
+    'hell nah you got me f*cked up \u{1F480}',
     'aw nah nah nah — you got me f*cked up.',
     'you got me ALL kinds of f*cked up rn.',
     'AWW HELL NAH not today. You got me f*cked up.',
     'nah for real, you got me f*cked up with that.',
-    'aw hell nah... you really got me f*cked up huh.',
+    'aw hell nah… you really said that huh.',
     'bro. BRO. You got me f*cked up.',
-    'aw hell nah — that got me f*cked up and I\'m not okay.',
+    'aw hell nah — I’m not okay rn.',
     'you got me COMPLETELY f*cked up. Wow.',
-    'aw hell NAH. Delete this. You got me f*cked up.',
+    'aw hell NAH. Delete this.',
+    'nah fam you got me f*cked up I KNOW you playin.',
+    'you got me all the way f*cked up.',
+    'you foul for that. you FOUL.',
 
-    // combos
-    'shiiiiiieet... aw hell nah. You got me f*cked up.',
-    'AWW HELL NAH — shiiiiiieet bro 💀',
+    // ── combos ──────────────────────────────────────────
+    'shiiiiiieet… aw hell nah. You got me f*cked up.',
+    'AWW HELL NAH — shiiiiiieet bro \u{1F480}',
     'shiiiiiieet, nah nah nah you got me f*cked up.',
-    'aw hell nah... shiiiiiieet I\'m done.',
-    'shiiiiiieet. Just... shiiiiiieet. You got me f*cked up.',
+    'aw hell nah… shiiiiiieet I’m done.',
+    'shiiiiiieet. Just… shiiiiiieet. You got me f*cked up.',
+    'nah shiiiiiieet fr fr you got me ALL the way f*cked up.',
+    'aw hell nah shiiiiiieet what is WRONG with you.',
+
+    // ── pure slang / attitude ────────────────────────────
+    'chile…',
+    'CHILE ANYWAYS…',
+    'chile… moving on.',
+    'bruh. just… bruh.',
+    'BRUH \u{1F480}',
+    'on god?? on GOD??',
+    'no cap that’s wild.',
+    'no cap no cap no cap.',
+    'deadass??',
+    'deadass bro.',
+    'you wildin fr.',
+    'you WILDIN.',
+    'you buggin rn.',
+    'bro is buggin \u{1F480}',
+    'the audacity. THE AUDACITY.',
+    'you tried it bestie.',
+    'not you thinking I was gonna say something different \u{1F480}',
+    'bro said that with his whole chest \u{1F480}',
+    'I’m dead \u{1F480}\u{1F480}\u{1F480}',
+    'I AM DECEASED.',
+    'tf did you just say to me??',
+    'WHO ASKED.',
+    'nobody asked but okay.',
+    'L + ratio.',
+    'ratio.',
+    'bro really said that \u{1F62D}',
+    'stop playin with me.',
+    'STOP PLAYIN.',
+    'you thought you ate with that one huh.',
+    'you did NOT eat.',
+    'oh you thought??',
+    'caught me lacking with that one.',
+    'on my mama…',
+    'on my mama that’s wild.',
+    'big facts tho.',
+    'facts. period.',
+    'periodt.',
+    'PERIODT.',
+    'bestie no. just… no.',
+    'not bestie asking this \u{1F480}',
+    'finna cry rn fr.',
+    'I’m finna catch a case.',
+    'you playing too much.',
+    'you are REALLY playing too much.',
+    'lowkey you not wrong tho.',
+    'highkey said what needed to be said.',
+    'that’s tuff.',
+    'THAT IS TUFF.',
+    'respectfully… shut up.',
+    'respectfully bro what \u{1F62D}',
+    'issa no from me dawg.',
+    'it’s giving… absolutely nothing.',
+    'it’s giving unhinged and I’m here for it.',
+    'slay I guess??',
+    'not today satan.',
+    'catch me outside.',
+    'catch me OUTSIDE, how bout dat.',
+    'bro ion even know what to say.',
+    'bro I can’t even rn.',
+    'tf is wrong with you fr.',
+    'my guy really said that \u{1F480}',
+    'my G… nah.',
+    'bro is NOT okay \u{1F480}',
+    'you are NOT okay and I’m concerned.',
+    'I just… I can’t.',
+    'I literally cannot even right now.',
+    'okay but WHY though.',
+    'hold up. HOLD UP.',
+    'wait wait wait wait WAIT.',
+    'nah wait I gotta process this.',
+    'say sike right now.',
+    'SAY SIKE.',
+    'you playing right?? you playing.',
+    'I know you playing.',
+    'you are absolutely cooked.',
+    'you cooked bruh.',
+    'done. I’m done. Goodbye.',
+    'I’m logging off.',
+    'unsubscribe.',
+    'delete this app.',
+    'ion wanna hear it.',
+    'bruh I just—',
+    'man listen—',
+    'okay LISTEN—',
+    'I’m not even gonna address that.',
+    'that’s not even worth a response but here we are.',
+    'I’m just gonna act like I didn’t read that.',
+    'nah bro keep that energy to yourself.',
+    'you must got me confused with somebody who cares.',
+    'you really said that with no hesitation huh.',
+    'the NERVE.',
+    'bro really woke up today and chose chaos.',
+    'you said WHAT in the WHAT now.',
+    'ion even wanna know how you got there.',
+    'bestie you ate and left no crumbs. unfortunately.',
+    'that’s crazy bro. that’s actually crazy.',
+    'bro what you on fr.',
+    'stay right there I’m calling someone.',
+    'what in the entire f*ck.',
+    'I’m calling your mama.',
+    'your mama should’ve taken the phone.',
+    'go to bed bro. right now. go.',
+    'nah you tweaking fr fr.',
+    'you tweakin and you know it.',
+    'we can’t be friends no more.',
+    'bro think he slick \u{1F480}',
+    'that’s giving federal offense.',
+    'I’d say I’m surprised but I’m not.',
+    'this is why nobody invites you nowhere.',
+    'aye at least you consistent with the foolishness.',
+    'you really said that out loud. to ME.',
+    'bruh said the quiet part LOUD.',
+    'I will not be taking questions at this time.',
+    'next question.',
+    'no further questions.',
   ];
 
   const chatWindow = document.getElementById('chat-window');
   const userInput  = document.getElementById('user-input');
   const sendBtn    = document.getElementById('send-btn');
+  const app        = document.getElementById('app');
+
+  // ── iOS visual viewport / keyboard fix ──────────────────
+  function syncHeight() {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+
+  syncHeight();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      syncHeight();
+      // scroll chat to bottom after keyboard slides in
+      requestAnimationFrame(scrollBottom);
+    });
+  } else {
+    window.addEventListener('resize', syncHeight);
+  }
+  // ────────────────────────────────────────────────────────
 
   function randomResponse() {
     return RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
@@ -247,14 +424,14 @@
   }
 
   function addBubble(text, role) {
-    const row = document.createElement('div');
+    const row    = document.createElement('div');
     row.className = `bubble-row ${role}`;
 
-    const avatar = document.createElement('div');
+    const avatar    = document.createElement('div');
     avatar.className = `avatar ${role}`;
-    avatar.textContent = role === 'bot' ? '🤌' : '👤';
+    avatar.textContent = role === 'bot' ? '\u{1F92C}' : '\u{1F464}';
 
-    const bubble = document.createElement('div');
+    const bubble    = document.createElement('div');
     bubble.className = `bubble ${role}`;
     bubble.textContent = text;
 
@@ -262,19 +439,18 @@
     row.appendChild(bubble);
     chatWindow.appendChild(row);
     scrollBottom();
-    return bubble;
   }
 
   function addTypingIndicator() {
-    const row = document.createElement('div');
+    const row    = document.createElement('div');
     row.className = 'bubble-row';
-    row.id = 'typing-row';
+    row.id       = 'typing-row';
 
-    const avatar = document.createElement('div');
+    const avatar    = document.createElement('div');
     avatar.className = 'avatar bot';
-    avatar.textContent = '🤌';
+    avatar.textContent = '\u{1F92C}';
 
-    const bubble = document.createElement('div');
+    const bubble    = document.createElement('div');
     bubble.className = 'bubble bot';
     bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
 
@@ -289,14 +465,9 @@
     if (el) el.remove();
   }
 
-  function randomDelay() {
-    // feels like it's actually "thinking" lmao
-    return 600 + Math.random() * 900;
-  }
-
   async function handleSend() {
     const text = userInput.value.trim();
-    if (!text) return;
+    if (!text || sendBtn.disabled) return;
 
     userInput.value = '';
     userInput.style.height = 'auto';
@@ -305,12 +476,12 @@
     addBubble(text, 'user');
     addTypingIndicator();
 
-    await new Promise(r => setTimeout(r, randomDelay()));
+    const delay = 700 + Math.random() * 1000;
+    await new Promise(r => setTimeout(r, delay));
 
     removeTypingIndicator();
     addBubble(randomResponse(), 'bot');
     sendBtn.disabled = false;
-    userInput.focus();
   }
 
   sendBtn.addEventListener('click', handleSend);
@@ -322,10 +493,9 @@
     }
   });
 
-  // auto-resize textarea
   userInput.addEventListener('input', () => {
     userInput.style.height = 'auto';
-    userInput.style.height = userInput.scrollHeight + 'px';
+    userInput.style.height = Math.min(userInput.scrollHeight, 110) + 'px';
   });
 </script>
 </body>
