@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- viewport-fit=cover + no user-scale prevents zoom on input focus on iOS -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -10,15 +9,11 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html {
-      /* JS will set --app-height to window.visualViewport.height for keyboard handling */
-      --app-height: 100dvh;
-    }
+    html { --app-height: 100dvh; }
 
     body {
       background: #0d0d0d;
       color: #f0f0f0;
-      /* -apple-system ensures SF Pro on iPhone */
       font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
       overscroll-behavior: none;
       -webkit-tap-highlight-color: transparent;
@@ -38,9 +33,8 @@
     header {
       width: 100%;
       max-width: 700px;
-      /* safe-area-inset-top handles the iPhone notch / Dynamic Island */
       padding: calc(env(safe-area-inset-top, 0px) + 16px) 24px 14px;
-      border-bottom: 1px solid #222;
+      border-bottom: 1px solid #1e1e1e;
       background: #0d0d0d;
       flex-shrink: 0;
     }
@@ -52,7 +46,7 @@
       color: #fff;
     }
 
-    header h1 span { color: #ff5c00; }
+    header h1 span { color: #a855f7; }
 
     header p {
       font-size: 0.76rem;
@@ -65,7 +59,6 @@
       width: 100%;
       max-width: 700px;
       overflow-y: auto;
-      /* smooth momentum scroll on iOS */
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: contain;
       padding: 20px 14px 10px;
@@ -93,28 +86,27 @@
       flex-shrink: 0;
     }
 
-    .avatar.bot  { background: #ff5c00; }
+    .avatar.bot  { background: #7e22ce; }
     .avatar.user { background: #2a2a2a; }
 
     .bubble {
       max-width: 78%;
       padding: 11px 15px;
       border-radius: 18px;
-      /* 16px minimum prevents iOS input zoom later */
-      font-size: 1rem;
+      font-size: 16px;
       line-height: 1.45;
       word-break: break-word;
     }
 
     .bubble.bot {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      background: #18101f;
+      border: 1px solid #2d1b45;
       border-bottom-left-radius: 4px;
       color: #f0f0f0;
     }
 
     .bubble.user {
-      background: #ff5c00;
+      background: #7e22ce;
       border-bottom-right-radius: 4px;
       color: #fff;
     }
@@ -128,7 +120,7 @@
     .typing-dots span {
       width: 8px;
       height: 8px;
-      background: #555;
+      background: #6b21a8;
       border-radius: 50%;
       animation: tdot 1.2s infinite;
     }
@@ -144,7 +136,6 @@
     #input-area {
       width: 100%;
       max-width: 700px;
-      /* safe-area-inset-bottom handles iPhone home indicator bar */
       padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
       display: flex;
       gap: 10px;
@@ -155,11 +146,10 @@
 
     #user-input {
       flex: 1;
-      background: #1a1a1a;
-      border: 1px solid #2d2d2d;
+      background: #18101f;
+      border: 1px solid #2d1b45;
       border-radius: 22px;
       color: #f0f0f0;
-      /* MUST be 16px+ on iOS or keyboard causes page zoom */
       font-size: 16px;
       padding: 11px 16px;
       outline: none;
@@ -170,11 +160,11 @@
       line-height: 1.4;
     }
 
-    #user-input::placeholder { color: #555; }
-    #user-input:focus { border-color: #ff5c00; }
+    #user-input::placeholder { color: #4a3560; }
+    #user-input:focus { border-color: #a855f7; }
 
     #send-btn {
-      background: #ff5c00;
+      background: #7e22ce;
       border: none;
       border-radius: 50%;
       color: #fff;
@@ -188,15 +178,13 @@
       flex-shrink: 0;
       transition: background 0.15s, transform 0.1s;
       align-self: flex-end;
-      /* prevent callout on long-press on iOS */
       -webkit-user-select: none;
       user-select: none;
     }
 
-    #send-btn:active  { transform: scale(0.88); }
+    #send-btn:active   { transform: scale(0.88); }
     #send-btn:disabled { background: #2a2a2a; cursor: default; }
 
-    /* hide scrollbar on iOS / webkit */
     #chat-window::-webkit-scrollbar { display: none; }
   </style>
 </head>
@@ -223,7 +211,7 @@
 </div>
 <script>
   const RESPONSES = [
-    // ── shiiiiiieet ─────────────────────────────────────
+    // shiiiiiieet
     'shiiiiiieet.',
     'SHIIIIIIEET.',
     'shiiiiiieet... \u{1F633}',
@@ -245,36 +233,36 @@
     'shiiiiiieet on everything.',
     'SHIIIIIIEET not you tho \u{1F480}',
 
-    // ── aw hell nah ─────────────────────────────────────
-    'aw hell nah you got me F*CKED UP.',
-    'AWW HELL NAH. You got me F*CKED ALL THE WAY UP.',
-    'aw HELL nah, you got me f*cked up fr fr.',
-    'nah. NAH. You really got me f*cked up right now.',
+    // aw hell nah
+    'aw hell nah you got me FUCKED UP.',
+    'AWW HELL NAH. You got me FUCKED ALL THE WAY UP.',
+    'aw HELL nah, you got me fucked up fr fr.',
+    'nah. NAH. You really got me fucked up right now.',
     'aw hell nah bro I KNOW you didn’t.',
-    'hell nah you got me f*cked up \u{1F480}',
-    'aw nah nah nah — you got me f*cked up.',
-    'you got me ALL kinds of f*cked up rn.',
-    'AWW HELL NAH not today. You got me f*cked up.',
-    'nah for real, you got me f*cked up with that.',
+    'hell nah you got me fucked up \u{1F480}',
+    'aw nah nah nah — you got me fucked up.',
+    'you got me ALL kinds of fucked up rn.',
+    'AWW HELL NAH not today. You got me fucked up.',
+    'nah for real, you got me fucked up with that.',
     'aw hell nah… you really said that huh.',
-    'bro. BRO. You got me f*cked up.',
+    'bro. BRO. You got me fucked up.',
     'aw hell nah — I’m not okay rn.',
-    'you got me COMPLETELY f*cked up. Wow.',
+    'you got me COMPLETELY fucked up. Wow.',
     'aw hell NAH. Delete this.',
-    'nah fam you got me f*cked up I KNOW you playin.',
-    'you got me all the way f*cked up.',
-    'you foul for that. you FOUL.',
+    'nah fam you got me fucked up I KNOW you playin.',
+    'you got me all the way fucked up.',
+    'you foul as hell for that.',
 
-    // ── combos ──────────────────────────────────────────
-    'shiiiiiieet… aw hell nah. You got me f*cked up.',
+    // combos
+    'shiiiiiieet… aw hell nah. You got me fucked up.',
     'AWW HELL NAH — shiiiiiieet bro \u{1F480}',
-    'shiiiiiieet, nah nah nah you got me f*cked up.',
+    'shiiiiiieet, nah nah nah you got me fucked up.',
     'aw hell nah… shiiiiiieet I’m done.',
-    'shiiiiiieet. Just… shiiiiiieet. You got me f*cked up.',
-    'nah shiiiiiieet fr fr you got me ALL the way f*cked up.',
+    'shiiiiiieet. Just… shiiiiiieet. You got me fucked up.',
+    'nah shiiiiiieet fr fr you got me ALL the way fucked up.',
     'aw hell nah shiiiiiieet what is WRONG with you.',
 
-    // ── pure slang / attitude ────────────────────────────
+    // pure slang / attitude
     'chile…',
     'CHILE ANYWAYS…',
     'chile… moving on.',
@@ -323,7 +311,7 @@
     'highkey said what needed to be said.',
     'that’s tuff.',
     'THAT IS TUFF.',
-    'respectfully… shut up.',
+    'respectfully… shut the fuck up.',
     'respectfully bro what \u{1F62D}',
     'issa no from me dawg.',
     'it’s giving… absolutely nothing.',
@@ -334,7 +322,7 @@
     'catch me OUTSIDE, how bout dat.',
     'bro ion even know what to say.',
     'bro I can’t even rn.',
-    'tf is wrong with you fr.',
+    'what the fuck is wrong with you fr.',
     'my guy really said that \u{1F480}',
     'my G… nah.',
     'bro is NOT okay \u{1F480}',
@@ -355,7 +343,7 @@
     'I’m logging off.',
     'unsubscribe.',
     'delete this app.',
-    'ion wanna hear it.',
+    'ion wanna hear that shit.',
     'bruh I just—',
     'man listen—',
     'okay LISTEN—',
@@ -363,17 +351,16 @@
     'that’s not even worth a response but here we are.',
     'I’m just gonna act like I didn’t read that.',
     'nah bro keep that energy to yourself.',
-    'you must got me confused with somebody who cares.',
+    'you must got me confused with somebody who gives a fuck.',
     'you really said that with no hesitation huh.',
     'the NERVE.',
     'bro really woke up today and chose chaos.',
     'you said WHAT in the WHAT now.',
     'ion even wanna know how you got there.',
-    'bestie you ate and left no crumbs. unfortunately.',
     'that’s crazy bro. that’s actually crazy.',
     'bro what you on fr.',
     'stay right there I’m calling someone.',
-    'what in the entire f*ck.',
+    'what in the entire fuck.',
     'I’m calling your mama.',
     'your mama should’ve taken the phone.',
     'go to bed bro. right now. go.',
@@ -390,14 +377,33 @@
     'I will not be taking questions at this time.',
     'next question.',
     'no further questions.',
+    'bro got me tight as fuck rn.',
+    'I’m so irritated rn and it’s your fault.',
+    'say that shit again I dare you.',
+    'SAY IT AGAIN.',
+    'that was some bullshit and you know it.',
+    'absolute bullshit. ten out of ten bullshit.',
+    'you on some real bullshit rn.',
+    'bro got the NERVE to say that shit.',
+    'nah fuck that and fuck what you said.',
+    'fuck outta here with that.',
+    'get the fuck outta here.',
+    'you got me fucked up AND sideways.',
+    'I’m tight. I’m so tight rn.',
+    'bro you gotta be out your damn mind.',
+    'you out your damn mind fr.',
+    'that shit was not it. not even close.',
+    'bro said some dumb ass shit and kept it moving.',
+    'you really said some dumb shit huh.',
+    'that’s dumb as hell bro.',
+    'oh hell no. oh HELL no.',
+    'nah bro hell no.',
   ];
 
   const chatWindow = document.getElementById('chat-window');
   const userInput  = document.getElementById('user-input');
   const sendBtn    = document.getElementById('send-btn');
-  const app        = document.getElementById('app');
 
-  // ── iOS visual viewport / keyboard fix ──────────────────
   function syncHeight() {
     const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     document.documentElement.style.setProperty('--app-height', h + 'px');
@@ -407,13 +413,11 @@
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
       syncHeight();
-      // scroll chat to bottom after keyboard slides in
       requestAnimationFrame(scrollBottom);
     });
   } else {
     window.addEventListener('resize', syncHeight);
   }
-  // ────────────────────────────────────────────────────────
 
   function randomResponse() {
     return RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
@@ -476,8 +480,7 @@
     addBubble(text, 'user');
     addTypingIndicator();
 
-    const delay = 700 + Math.random() * 1000;
-    await new Promise(r => setTimeout(r, delay));
+    await new Promise(r => setTimeout(r, 700 + Math.random() * 1000));
 
     removeTypingIndicator();
     addBubble(randomResponse(), 'bot');
