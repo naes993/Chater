@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatEBT</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      max-width: 700px;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #222;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+
+    header h1 span {
+      color: #ff5c00;
+    }
+
+    header p {
+      font-size: 0.78rem;
+      color: #666;
+      margin-top: 3px;
+    }
+
+    #chat-window {
+      flex: 1;
+      width: 100%;
+      max-width: 700px;
+      overflow-y: auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    .bubble-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .bubble-row.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .avatar.bot  { background: #ff5c00; }
+    .avatar.user { background: #333; }
+
+    .bubble {
+      max-width: 72%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 0.97rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .bubble.bot {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-bottom-left-radius: 4px;
+      color: #f0f0f0;
+    }
+
+    .bubble.user {
+      background: #ff5c00;
+      border-bottom-right-radius: 4px;
+      color: #fff;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 5px;
+      padding: 4px 2px;
+    }
+
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      background: #666;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30%            { transform: translateY(-6px); }
+    }
+
+    #input-area {
+      width: 100%;
+      max-width: 700px;
+      padding: 12px 16px 20px;
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    #user-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 12px;
+      color: #f0f0f0;
+      font-size: 0.97rem;
+      padding: 11px 16px;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      max-height: 120px;
+    }
+
+    #user-input::placeholder { color: #555; }
+    #user-input:focus { border-color: #ff5c00; }
+
+    #send-btn {
+      background: #ff5c00;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.2rem;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.1s;
+      align-self: flex-end;
+    }
+
+    #send-btn:hover  { background: #e04e00; }
+    #send-btn:active { transform: scale(0.93); }
+    #send-btn:disabled { background: #333; cursor: default; }
+
+    #chat-window::-webkit-scrollbar { width: 4px; }
+    #chat-window::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Chat<span>EBT</span></h1>
+  <p>powered by pure unfiltered energy &nbsp;⚡</p>
+</header>
+
+<div id="chat-window">
+  <div class="bubble-row">
+    <div class="avatar bot">🤌</div>
+    <div class="bubble bot">Aye what's good. Ask me anything. Go ahead. I dare you.</div>
+  </div>
+</div>
+
+<div id="input-area">
+  <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
+  <button id="send-btn" aria-label="Send">&#10148;</button>
+</div>
+
+<script>
+  const RESPONSES = [
+    // shiiiiiieet variants
+    'shiiiiiieet.',
+    'SHIIIIIIEET.',
+    'shiiiiiieet... 😳',
+    'shiiiiiiiiiiiiiieet bro.',
+    'shiiiiiiieet, for real??',
+    'man... shiiiiiieet.',
+    'shiiiiiieet homie, that's wild.',
+    'SHIIIIIIEET — I'm not even gonna lie.',
+    'shiiiiiieet you really said that huh.',
+    'shiiiiiieet... okay. okay okay okay.',
+    '...shiiiiiieet.',
+    'shiiiiiieet, I had to read that twice.',
+    'shiiiiiieet bro I cannot 💀',
+    'shiiiiiieet — I felt that.',
+    'shiiiiiieet and I oop—',
+
+    // aw hell nah variants
+    'aw hell nah you got me F*CKED UP.',
+    'AWW HELL NAH. You got me F*CKED ALL THE WAY UP.',
+    'aw HELL nah, you got me f*cked up fr fr.',
+    'nah. NAH. You really got me f*cked up right now.',
+    'aw hell nah bro. You got me F*CKED UP with that one.',
+    'hell nah you got me f*cked up 💀',
+    'aw nah nah nah — you got me f*cked up.',
+    'you got me ALL kinds of f*cked up rn.',
+    'AWW HELL NAH not today. You got me f*cked up.',
+    'nah for real, you got me f*cked up with that.',
+    'aw hell nah... you really got me f*cked up huh.',
+    'bro. BRO. You got me f*cked up.',
+    'aw hell nah — that got me f*cked up and I\'m not okay.',
+    'you got me COMPLETELY f*cked up. Wow.',
+    'aw hell NAH. Delete this. You got me f*cked up.',
+
+    // combos
+    'shiiiiiieet... aw hell nah. You got me f*cked up.',
+    'AWW HELL NAH — shiiiiiieet bro 💀',
+    'shiiiiiieet, nah nah nah you got me f*cked up.',
+    'aw hell nah... shiiiiiieet I\'m done.',
+    'shiiiiiieet. Just... shiiiiiieet. You got me f*cked up.',
+  ];
+
+  const chatWindow = document.getElementById('chat-window');
+  const userInput  = document.getElementById('user-input');
+  const sendBtn    = document.getElementById('send-btn');
+
+  function randomResponse() {
+    return RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+  }
+
+  function scrollBottom() {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function addBubble(text, role) {
+    const row = document.createElement('div');
+    row.className = `bubble-row ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${role}`;
+    avatar.textContent = role === 'bot' ? '🤌' : '👤';
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = text;
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+    return bubble;
+  }
+
+  function addTypingIndicator() {
+    const row = document.createElement('div');
+    row.className = 'bubble-row';
+    row.id = 'typing-row';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar bot';
+    avatar.textContent = '🤌';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bot';
+    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-row');
+    if (el) el.remove();
+  }
+
+  function randomDelay() {
+    // feels like it's actually "thinking" lmao
+    return 600 + Math.random() * 900;
+  }
+
+  async function handleSend() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    addBubble(text, 'user');
+    addTypingIndicator();
+
+    await new Promise(r => setTimeout(r, randomDelay()));
+
+    removeTypingIndicator();
+    addBubble(randomResponse(), 'bot');
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  });
+
+  // auto-resize textarea
+  userInput.addEventListener('input', () => {
+    userInput.style.height = 'auto';
+    userInput.style.height = userInput.scrollHeight + 'px';
+  });
+</script>
+</body>
+</html>
