@@ -28,71 +28,179 @@
 
     #app {
       display: flex;
-      flex-direction: column;
-      align-items: center;
       width: 100%;
       height: 100vh;
       height: var(--app-height);
       overflow: hidden;
     }
 
-    header {
-      width: 100%;
-      max-width: 700px;
-      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
-      border-bottom: 1px solid #1e1e1e;
-      background: #0d0d0d;
+    /* ─── SIDEBAR ───────────────────────────────────────────── */
+    #sidebar {
+      width: 300px;
       flex-shrink: 0;
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      border-right: 1px solid #1a1a1a;
+      background: #0d0d0d;
     }
 
-    .header-text { flex: 1; min-width: 0; }
+    #sidebar-header {
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-    header h1 {
+    #sidebar-header h1 {
+      flex: 1;
       font-size: 1.5rem;
       font-weight: 800;
       letter-spacing: -0.5px;
       color: #fff;
     }
+    #sidebar-header h1 span { color: #a855f7; }
 
-    header h1 span { color: var(--accent-light); }
+    #add-btn {
+      background: #7e22ce;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      width: 36px; height: 36px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.1s;
+      line-height: 1;
+      -webkit-user-select: none; user-select: none;
+    }
+    #add-btn:active { background: #a855f7; transform: scale(0.92); }
 
-    header p {
-      font-size: 0.73rem;
+    #contacts-list { flex: 1; overflow-y: auto; }
+    #contacts-list::-webkit-scrollbar { display: none; }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #141414;
+      transition: background 0.15s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .contact-item:active { background: #181818; }
+    .contact-item.active {
+      background: #18101f;
+      border-left: 3px solid #a855f7;
+      padding-left: 13px;
+    }
+
+    .contact-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-weight: 600; font-size: 0.95rem; color: #f0f0f0; }
+    .contact-preview {
+      font-size: 0.78rem;
       color: #555;
-      margin-top: 1px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-top: 3px;
     }
 
-    .header-btn {
-      background: var(--accent-bg);
-      border: 1px solid var(--accent-border);
-      border-radius: 10px;
-      color: #aaa;
-      font-size: 0.72rem;
-      padding: 7px 10px;
+    /* ─── CHAT AREA ─────────────────────────────────────────── */
+    #chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    #chat-header {
+      width: 100%;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      background: #0d0d0d;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #back-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--accent-light);
+      font-size: 1.5rem;
       cursor: pointer;
-      white-space: nowrap;
+      padding: 2px 10px 2px 0;
+      line-height: 1;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    #chat-header-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .header-text { flex: 1; min-width: 0; }
+    #active-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: block;
+      line-height: 1.2;
+    }
+    #active-subtitle { font-size: 0.7rem; color: #555; }
+
+    #reset-btn {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 10px;
+      color: #666;
+      font-size: 1rem;
+      padding: 6px 9px;
+      cursor: pointer;
       flex-shrink: 0;
       transition: border-color 0.2s, color 0.2s;
-      -webkit-user-select: none;
-      user-select: none;
-      line-height: 1;
+      -webkit-user-select: none; user-select: none;
     }
-
-    .header-btn:active { color: #fff; border-color: var(--accent-light); }
-
-    #reset-btn { font-size: 1rem; padding: 6px 9px; color: #666; }
     #reset-btn:active { color: #fff; border-color: #555; }
 
+    /* ─── EMPTY STATE ───────────────────────────────────────── */
+    #empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #2a2a2a;
+      text-align: center;
+      padding: 24px;
+    }
+    #empty-state .icon { font-size: 3rem; }
+    #empty-state p { font-size: 0.9rem; color: #333; line-height: 1.5; }
+
+    /* ─── MESSAGES ──────────────────────────────────────────── */
     #chat-window {
       flex: 1;
       width: 100%;
-      max-width: 700px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: contain;
@@ -101,20 +209,20 @@
       flex-direction: column;
       gap: 12px;
     }
+    #chat-window::-webkit-scrollbar { display: none; }
 
     .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
     .bubble-row.user { flex-direction: row-reverse; }
 
-    .avatar {
+    .av {
       width: 32px; height: 32px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 0.9rem;
       flex-shrink: 0;
       background: var(--accent);
-      transition: background 0.3s;
     }
-    .avatar.user { background: #2a2a2a; }
+    .av.user-av { background: #2a2a2a; }
 
     .bubble {
       max-width: 78%;
@@ -124,26 +232,22 @@
       line-height: 1.45;
       word-break: break-word;
     }
-
     .bubble.bot {
       background: var(--accent-bg);
       border: 1px solid var(--accent-border);
       border-bottom-left-radius: 4px;
       color: #f0f0f0;
-      transition: background 0.3s, border-color 0.3s;
     }
-
     .bubble.user {
       background: var(--accent);
       border-bottom-right-radius: 4px;
       color: #fff;
-      transition: background 0.3s;
     }
 
     .typing-dots { display: flex; gap: 5px; padding: 4px 2px; }
     .typing-dots span {
       width: 8px; height: 8px;
-      background: var(--accent);
+      background: var(--accent-light);
       border-radius: 50%;
       animation: tdot 1.2s infinite;
     }
@@ -154,13 +258,13 @@
       30%          { transform: translateY(-6px); opacity:1; }
     }
 
+    /* ─── INPUT ─────────────────────────────────────────────── */
     #input-area {
       width: 100%;
-      max-width: 700px;
       padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
       display: flex;
       gap: 10px;
-      border-top: 1px solid #1e1e1e;
+      border-top: 1px solid #1a1a1a;
       background: #0d0d0d;
       flex-shrink: 0;
     }
@@ -195,12 +299,12 @@
       flex-shrink: 0;
       transition: background 0.2s, transform 0.1s;
       align-self: flex-end;
-      -webkit-user-select: none;
-      user-select: none;
+      -webkit-user-select: none; user-select: none;
     }
     #send-btn:active   { transform: scale(0.88); }
     #send-btn:disabled { background: #2a2a2a; cursor: default; }
 
+    /* ─── TOAST ─────────────────────────────────────────────── */
     #toast {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
@@ -221,28 +325,46 @@
     #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: #7f1d1d; color: #fca5a5; }
 
-    #chat-window::-webkit-scrollbar { display: none; }
+    /* ─── MOBILE ────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      #sidebar { width: 100%; }
+      #back-btn { display: flex; align-items: center; }
+
+      #app.show-sidebar #sidebar   { display: flex; }
+      #app.show-sidebar #chat-area { display: none; }
+      #app.show-chat    #sidebar   { display: none; }
+      #app.show-chat    #chat-area { display: flex; }
+    }
   </style>
 </head>
 <body>
-<div id="app">
+<div id="app" class="show-sidebar">
 
-  <header>
-    <div class="header-text">
-      <h1>Chat<span id="bot-name">EBT</span></h1>
-      <p>powered by pure unfiltered energy &#9889;</p>
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <h1>Chat<span>EBT</span></h1>
+      <button id="add-btn" title="Load personality JSON">+</button>
+      <input type="file" id="file-input" accept=".json" style="display:none" />
     </div>
-    <button id="reset-btn"  class="header-btn" aria-label="Reset chat">&#x21BA;</button>
-    <button id="upload-btn" class="header-btn" aria-label="Upload personality">&#128100; Load</button>
-    <input type="file" id="file-input" accept=".json" style="display:none" />
-  </header>
+    <div id="contacts-list"></div>
+  </aside>
 
-  <div id="chat-window"></div>
-
-  <div id="input-area">
-    <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
-    <button id="send-btn" aria-label="Send">&#10148;</button>
-  </div>
+  <main id="chat-area">
+    <header id="chat-header">
+      <button id="back-btn">&#8592;</button>
+      <div id="chat-header-avatar"></div>
+      <div class="header-text">
+        <span id="active-name"></span>
+        <span id="active-subtitle">active now</span>
+      </div>
+      <button id="reset-btn" title="Clear this chat">&#x21BA;</button>
+    </header>
+    <div id="chat-window"></div>
+    <div id="input-area">
+      <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
+      <button id="send-btn">&#10148;</button>
+    </div>
+  </main>
 
 </div>
 <div id="toast"></div>
@@ -388,17 +510,28 @@
     ]
   };
 
-  let personality = { ...DEFAULT_PERSONALITY };
+  // sessions: [{ id, personality, messages: [{role, text}] }]
+  let sessions = [];
+  let activeSessionId = null;
+  let isBotTyping = false;
 
-  const chatWindow = document.getElementById('chat-window');
-  const userInput  = document.getElementById('user-input');
-  const sendBtn    = document.getElementById('send-btn');
-  const uploadBtn  = document.getElementById('upload-btn');
-  const resetBtn   = document.getElementById('reset-btn');
-  const fileInput  = document.getElementById('file-input');
-  const toast      = document.getElementById('toast');
-  const botNameEl  = document.getElementById('bot-name');
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
+  // ── DOM refs ────────────────────────────────────────────────
+  const appEl         = document.getElementById('app');
+  const contactsList  = document.getElementById('contacts-list');
+  const chatWindow    = document.getElementById('chat-window');
+  const userInput     = document.getElementById('user-input');
+  const sendBtn       = document.getElementById('send-btn');
+  const resetBtn      = document.getElementById('reset-btn');
+  const addBtn        = document.getElementById('add-btn');
+  const fileInput     = document.getElementById('file-input');
+  const backBtn       = document.getElementById('back-btn');
+  const headerAvatar  = document.getElementById('chat-header-avatar');
+  const activeName    = document.getElementById('active-name');
+  const toast         = document.getElementById('toast');
+
+  // ── viewport height fix ─────────────────────────────────────
   function syncHeight() {
     const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     document.documentElement.style.setProperty('--app-height', h + 'px');
@@ -409,35 +542,29 @@
     requestAnimationFrame(scrollBottom);
   });
 
-  // ── audio ─────────────────────────────────────────────────────
+  // ── audio ────────────────────────────────────────────────────
   let audioCtx = null;
-
   function unlockAudio() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
   }
-
   function playChirp() {
     if (!audioCtx) return;
     try {
-      const ctx = audioCtx;
-      const t   = ctx.currentTime;
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const ctx = audioCtx, t = ctx.currentTime;
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
       osc.type = 'square';
       osc.frequency.setValueAtTime(3400, t);
       gain.gain.setValueAtTime(0, t);
       gain.gain.linearRampToValueAtTime(0.2, t + 0.003);
       gain.gain.setValueAtTime(0.2, t + 0.07);
       gain.gain.linearRampToValueAtTime(0, t + 0.08);
-      osc.start(t);
-      osc.stop(t + 0.09);
+      osc.start(t); osc.stop(t + 0.09);
     } catch (e) {}
   }
 
-  // ── toast ─────────────────────────────────────────────────────
+  // ── toast ────────────────────────────────────────────────────
   let toastTimer;
   function showToast(msg, isError = false) {
     clearTimeout(toastTimer);
@@ -446,36 +573,159 @@
     toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
   }
 
-  function applyPersonality(p) {
+  // ── contacts list ────────────────────────────────────────────
+  function renderContacts() {
+    contactsList.innerHTML = '';
+    sessions.forEach(session => {
+      const last    = session.messages[session.messages.length - 1];
+      const preview = last ? last.text : 'No messages yet';
+      const p       = session.personality;
+
+      const item = document.createElement('div');
+      item.className = 'contact-item' + (session.id === activeSessionId ? ' active' : '');
+      item.innerHTML =
+        `<div class="contact-avatar" style="background:${p.accentColor || '#7e22ce'}">${p.avatar}</div>` +
+        `<div class="contact-info">` +
+          `<div class="contact-name">${p.name}</div>` +
+          `<div class="contact-preview">${preview.slice(0, 50)}</div>` +
+        `</div>`;
+      item.addEventListener('click', () => selectSession(session.id));
+      contactsList.appendChild(item);
+    });
+  }
+
+  // ── select / switch session ──────────────────────────────────
+  function selectSession(id) {
+    activeSessionId = id;
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+
+    const p    = session.personality;
     const root = document.documentElement;
     root.style.setProperty('--accent',        p.accentColor  || DEFAULT_PERSONALITY.accentColor);
     root.style.setProperty('--accent-light',  p.accentLight  || DEFAULT_PERSONALITY.accentLight);
     root.style.setProperty('--accent-bg',     p.accentBg     || DEFAULT_PERSONALITY.accentBg);
     root.style.setProperty('--accent-border', p.accentBorder || DEFAULT_PERSONALITY.accentBorder);
-    botNameEl.textContent = p.name || DEFAULT_PERSONALITY.name;
-    document.querySelectorAll('.avatar.bot').forEach(el => {
-      el.textContent = p.avatar || DEFAULT_PERSONALITY.avatar;
-    });
+
+    headerAvatar.textContent = p.avatar;
+    headerAvatar.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+    activeName.textContent = p.name;
+
+    renderChatMessages(session);
+    renderContacts();
+
+    appEl.className = 'show-chat';
+    userInput.focus();
   }
 
-  function resetChat() {
-    personality = { ...DEFAULT_PERSONALITY };
-    applyPersonality(personality);
-    removeTypingIndicator();
+  // ── render messages ──────────────────────────────────────────
+  function renderChatMessages(session) {
     chatWindow.innerHTML = '';
-    sendBtn.disabled = false;
+    session.messages.forEach(msg => appendBubble(msg.text, msg.role, session.personality, false));
+    scrollBottom();
+  }
+
+  // ── append a single bubble ───────────────────────────────────
+  function appendBubble(text, role, personality, save = true) {
+    if (save) {
+      const session = sessions.find(s => s.id === activeSessionId);
+      if (session) {
+        session.messages.push({ role, text });
+        renderContacts();
+      }
+    }
+
+    const p   = personality || sessions.find(s => s.id === activeSessionId)?.personality || DEFAULT_PERSONALITY;
+    const row = document.createElement('div');
+    row.className = `bubble-row ${role}`;
+
+    const av = document.createElement('div');
+    av.className = role === 'bot' ? 'av' : 'av user-av';
+    av.textContent = role === 'bot' ? p.avatar : '\u{1F464}';
+    if (role === 'bot') av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = text;
+
+    row.appendChild(av);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+
+  // ── typing indicator ─────────────────────────────────────────
+  function addTypingIndicator(p) {
+    const row = document.createElement('div');
+    row.className = 'bubble-row bot';
+    row.id = 'typing-row';
+    const av = document.createElement('div');
+    av.className = 'av';
+    av.textContent = p.avatar;
+    av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bot';
+    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    row.appendChild(av);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-row');
+    if (el) el.remove();
+  }
+
+  function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
+
+  // ── send message ─────────────────────────────────────────────
+  async function handleSend() {
+    if (!activeSessionId || isBotTyping) return;
+    const text = userInput.value.trim();
+    if (!text) return;
+    unlockAudio();
+
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+
     userInput.value = '';
     userInput.style.height = 'auto';
-    addBubble(DEFAULT_PERSONALITY.greeting, 'bot');
-    showToast('\u{1F504} Chat reset');
+    sendBtn.disabled = true;
+    isBotTyping = true;
+
+    appendBubble(text, 'user', session.personality, true);
+    addTypingIndicator(session.personality);
+
+    await new Promise(r => setTimeout(r, 700 + Math.random() * 1000));
+    removeTypingIndicator();
+
+    const pool = session.personality.responses;
+    const reply = pool[Math.floor(Math.random() * pool.length)];
+    appendBubble(reply, 'bot', session.personality, true);
+    playChirp();
+
+    isBotTyping = false;
+    sendBtn.disabled = false;
+    userInput.focus();
   }
 
-  resetBtn.addEventListener('click', resetChat);
+  // ── reset active session ─────────────────────────────────────
+  function resetActiveSession() {
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+    removeTypingIndicator();
+    isBotTyping = false;
+    sendBtn.disabled = false;
+    session.messages = [];
+    const greeting = session.personality.greeting || DEFAULT_PERSONALITY.greeting;
+    session.messages.push({ role: 'bot', text: greeting });
+    renderChatMessages(session);
+    renderContacts();
+    showToast('\u{1F504} Chat cleared');
+  }
 
-  uploadBtn.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
+  // ── upload personality JSON ──────────────────────────────────
+  function loadPersonalityFile(file) {
     if (!file) return;
     fileInput.value = '';
     const reader = new FileReader();
@@ -484,84 +734,49 @@
       try { parsed = JSON.parse(e.target.result); }
       catch { showToast('⚠️ Invalid JSON file.', true); return; }
       if (!Array.isArray(parsed.responses) || parsed.responses.length === 0) {
-        showToast('⚠️ JSON needs a non-empty "responses" array.', true);
+        showToast('⚠️ JSON needs a non-empty “responses” array.', true);
         return;
       }
-      personality = { ...DEFAULT_PERSONALITY, ...parsed };
-      applyPersonality(personality);
-      if (parsed.greeting) addBubble(parsed.greeting, 'bot');
-      showToast('✅ Loaded: ' + (parsed.name || 'Custom'));
+      const p = { ...DEFAULT_PERSONALITY, ...parsed };
+      const session = {
+        id: uid(),
+        personality: p,
+        messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting }]
+      };
+      sessions.push(session);
+      renderContacts();
+      selectSession(session.id);
+      showToast('✅ Added: ' + p.name);
     };
     reader.readAsText(file);
-  });
-
-  function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
-
-  function addBubble(text, role) {
-    const row = document.createElement('div');
-    row.className = `bubble-row ${role}`;
-    const avatar = document.createElement('div');
-    avatar.className = `avatar ${role}`;
-    avatar.textContent = role === 'bot' ? (personality.avatar || DEFAULT_PERSONALITY.avatar) : '\u{1F464}';
-    const bubble = document.createElement('div');
-    bubble.className = `bubble ${role}`;
-    bubble.textContent = text;
-    row.appendChild(avatar);
-    row.appendChild(bubble);
-    chatWindow.appendChild(row);
-    scrollBottom();
   }
 
-  function addTypingIndicator() {
-    const row = document.createElement('div');
-    row.className = 'bubble-row';
-    row.id = 'typing-row';
-    const avatar = document.createElement('div');
-    avatar.className = 'avatar bot';
-    avatar.textContent = personality.avatar || DEFAULT_PERSONALITY.avatar;
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble bot';
-    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
-    row.appendChild(avatar);
-    row.appendChild(bubble);
-    chatWindow.appendChild(row);
-    scrollBottom();
-  }
-
-  function removeTypingIndicator() {
-    const el = document.getElementById('typing-row');
-    if (el) el.remove();
-  }
-
-  async function handleSend() {
-    const text = userInput.value.trim();
-    if (!text || sendBtn.disabled) return;
-    unlockAudio();
-    userInput.value = '';
-    userInput.style.height = 'auto';
-    sendBtn.disabled = true;
-    addBubble(text, 'user');
-    addTypingIndicator();
-    await new Promise(r => setTimeout(r, 700 + Math.random() * 1000));
-    removeTypingIndicator();
-    const pool = personality.responses;
-    addBubble(pool[Math.floor(Math.random() * pool.length)], 'bot');
-    playChirp();
-    sendBtn.disabled = false;
-  }
-
-  sendBtn.addEventListener('click', handleSend);
-
+  // ── event listeners ──────────────────────────────────────────
+  addBtn.addEventListener('click',  () => fileInput.click());
+  fileInput.addEventListener('change', () => loadPersonalityFile(fileInput.files[0]));
+  resetBtn.addEventListener('click', resetActiveSession);
+  backBtn.addEventListener('click',  () => { appEl.className = 'show-sidebar'; });
+  sendBtn.addEventListener('click',  handleSend);
   userInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   });
-
   userInput.addEventListener('input', () => {
     userInput.style.height = 'auto';
     userInput.style.height = Math.min(userInput.scrollHeight, 110) + 'px';
   });
 
-  addBubble(DEFAULT_PERSONALITY.greeting, 'bot');
+  // ── init ─────────────────────────────────────────────────────
+  (function init() {
+    const ebt = {
+      id: 'ebt',
+      personality: { ...DEFAULT_PERSONALITY },
+      messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting }]
+    };
+    sessions.push(ebt);
+    renderContacts();
+    // Auto-open on desktop; mobile stays on contacts list
+    if (window.innerWidth > 640) selectSession('ebt');
+  })();
 </script>
 </body>
 </html>
