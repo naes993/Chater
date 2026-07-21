@@ -543,24 +543,36 @@
   });
 
   // ── audio ────────────────────────────────────────────────────
-  let audioCtx = null;
+  const replySound = new Audio('chater-e-reply.m4a');
+  replySound.preload = 'auto';
+  let audioUnlocked = false;
   function unlockAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioUnlocked) return;
+    // iOS/Safari require a play() during a user gesture before later playback works
+    replySound.muted = true;
+    const p = replySound.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        replySound.pause();
+        replySound.currentTime = 0;
+        replySound.muted = false;
+        audioUnlocked = true;
+      }).catch(() => {
+        replySound.muted = false;
+      });
+    } else {
+      replySound.pause();
+      replySound.currentTime = 0;
+      replySound.muted = false;
+      audioUnlocked = true;
+    }
   }
-  function playChirp() {
-    if (!audioCtx) return;
+  function playReplySound() {
     try {
-      const ctx = audioCtx, t = ctx.currentTime;
-      const osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(3400, t);
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.2, t + 0.003);
-      gain.gain.setValueAtTime(0.2, t + 0.07);
-      gain.gain.linearRampToValueAtTime(0, t + 0.08);
-      osc.start(t); osc.stop(t + 0.09);
+      replySound.muted = false;
+      replySound.currentTime = 0;
+      const p = replySound.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
     } catch (e) {}
   }
 
@@ -702,7 +714,7 @@
     const pool = session.personality.responses;
     const reply = pool[Math.floor(Math.random() * pool.length)];
     appendBubble(reply, 'bot', session.personality, true);
-    playChirp();
+    playReplySound();
 
     isBotTyping = false;
     sendBtn.disabled = false;
