@@ -1,0 +1,2723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>ChatEBT</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      --app-height: 100dvh;
+      --accent:       #7e22ce;
+      --accent-light: #a855f7;
+      --accent-bg:    #18101f;
+      --accent-border:#2d1b45;
+    }
+
+    body {
+      background: #0d0d0d;
+      color: #f0f0f0;
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    #app {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      height: var(--app-height);
+      overflow: hidden;
+    }
+
+    /* ─── SIDEBAR / THREADS ─────────────────────────────────── */
+    #sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1a1a1a;
+      background: #0d0d0d;
+    }
+
+    #sidebar-header {
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #sidebar-header h1 {
+      flex: 1;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    #start-new-chat {
+      background: #7e22ce;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+      transition: background 0.2s, transform 0.1s;
+      -webkit-user-select: none; user-select: none;
+    }
+    #start-new-chat:active {
+      background: #a855f7;
+      transform: scale(0.92);
+    }
+
+    #browse-packs {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 50%;
+      color: var(--accent-light);
+      font-size: 0.95rem;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+      -webkit-user-select: none; user-select: none;
+    }
+    #browse-packs:active {
+      color: #fff;
+      border-color: var(--accent-light);
+      transform: scale(0.92);
+    }
+
+    #threads-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #sidebar.browsing #threads-pane { display: none; }
+
+    #browse-pane {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #sidebar.browsing #browse-pane { display: flex; }
+
+    #browse-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    #browse-toolbar h2 {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    #browse-back {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 0.78rem;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    #browse-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 12px 24px;
+    }
+    .browse-section { margin-top: 10px; }
+    .browse-pack-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #777;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 4px 4px 10px;
+    }
+    .browse-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .browse-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 14px 6px 12px;
+      border-radius: 14px;
+      background: #141414;
+      border: 1px solid #1e1e1e;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+    .browse-tile:active { background: #1a1a1a; border-color: #333; }
+    .browse-tile-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.35rem;
+    }
+    .browse-tile-name {
+      font-size: 0.72rem;
+      color: #ddd;
+      text-align: center;
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .browse-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: #555;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    #contacts-list { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    #contacts-list::-webkit-scrollbar { display: none; }
+
+    .contact-row {
+      position: relative;
+      border-bottom: 1px solid #141414;
+      overflow: hidden;
+    }
+
+    .contact-delete {
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 84px;
+      background: #7f1d1d;
+      color: #fecaca;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 0;
+    }
+
+    .contact-item {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      background: #0d0d0d;
+      transition: background 0.15s, transform 0.2s ease;
+      -webkit-user-select: none; user-select: none;
+      touch-action: pan-y;
+    }
+    .contact-item:active { background: #181818; }
+    .contact-item.active {
+      background: #18101f;
+      border-left: 3px solid #a855f7;
+      padding-left: 13px;
+    }
+    .contact-item.swiped { transform: translateX(-84px); }
+
+    .contact-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-top {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .contact-name {
+      flex: 1;
+      min-width: 0;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #f0f0f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .contact-time {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      color: #555;
+    }
+    .contact-preview {
+      font-size: 0.78rem;
+      color: #555;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 3px;
+    }
+
+    /* ─── CHAT AREA ─────────────────────────────────────────── */
+    #chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    #chat-header {
+      width: 100%;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1e1e1e;
+      background: #0d0d0d;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-text {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    #chat-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+      line-height: 1.15;
+    }
+    #chat-header h1 span { color: var(--accent-light); }
+
+    #chat-header .tagline {
+      font-size: 0.73rem;
+      color: #555;
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #chat-header .tagline.hidden { display: none; }
+
+    #about-btn {
+      display: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 10px;
+      min-width: 34px;
+      justify-content: center;
+    }
+    #about-btn.visible { display: inline-flex; }
+
+    .header-btn {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 0.72rem;
+      padding: 7px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s;
+      -webkit-user-select: none;
+      user-select: none;
+      line-height: 1;
+    }
+    .header-btn:active { color: #fff; border-color: var(--accent-light); }
+
+    #reset-btn { font-size: 1rem; padding: 6px 9px; color: #666; }
+    #reset-btn:active { color: #fff; border-color: #555; }
+
+    #admin-chip {
+      display: none;
+      font-size: 0.72rem;
+      padding: 7px 10px;
+    }
+    #admin-chip.visible { display: inline-flex; }
+
+    #chat-empty {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #333;
+      text-align: center;
+      padding: 24px;
+      font-size: 0.9rem;
+    }
+    #app.no-session #chat-empty { display: flex; }
+    #app.no-session #chat-window,
+    #app.no-session #input-area { display: none; }
+
+    #chat-window {
+      flex: 1;
+      width: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 20px 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #chat-window::-webkit-scrollbar { display: none; }
+
+    .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
+    .bubble-row.user { flex-direction: row-reverse; }
+
+    .av {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      background: var(--accent);
+    }
+    .av.user-av { background: #2a2a2a; }
+
+    .bubble {
+      max-width: 78%;
+      padding: 11px 15px;
+      border-radius: 18px;
+      font-size: 16px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .bubble.bot {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-bottom-left-radius: 4px;
+      color: #f0f0f0;
+    }
+    .bubble.user {
+      background: var(--accent);
+      border-bottom-right-radius: 4px;
+      color: #fff;
+    }
+
+    .typing-dots { display: flex; gap: 5px; padding: 4px 2px; }
+    .typing-dots span {
+      width: 8px; height: 8px;
+      background: var(--accent-light);
+      border-radius: 50%;
+      animation: tdot 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tdot {
+      0%,60%,100% { transform: translateY(0); opacity:.5; }
+      30%          { transform: translateY(-6px); opacity:1; }
+    }
+
+    #input-area {
+      width: 100%;
+      padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid #1a1a1a;
+      background: #0d0d0d;
+      flex-shrink: 0;
+    }
+
+    #user-input {
+      flex: 1;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 22px;
+      color: #f0f0f0;
+      font-size: 16px;
+      padding: 11px 16px;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      max-height: 110px;
+      line-height: 1.4;
+    }
+    #user-input::placeholder { color: #4a3560; }
+    #user-input:focus { border-color: var(--accent-light); }
+
+    #send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.1rem;
+      width: 46px; height: 46px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.1s;
+      align-self: flex-end;
+      -webkit-user-select: none; user-select: none;
+    }
+    #send-btn:active   { transform: scale(0.88); }
+    #send-btn:disabled { background: #2a2a2a; cursor: default; }
+
+    #toast {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #f0f0f0;
+      font-size: 0.82rem;
+      padding: 9px 12px 9px 16px;
+      border-radius: 20px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100vw - 32px);
+    }
+    #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #toast.error { border-color: #7f1d1d; color: #fca5a5; }
+    #toast .toast-undo {
+      background: none;
+      border: none;
+      color: var(--accent-light);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+
+    /* Desktop: solo chat hides the threads column */
+    @media (min-width: 641px) {
+      #app.solo.show-chat #sidebar { display: none !important; }
+      #app.solo.show-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
+    }
+
+    /* Mobile: app-like slide-over between chat and threads */
+    @media (max-width: 640px) {
+      #app {
+        position: relative;
+      }
+
+      #threads-scrim {
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 86%;
+        z-index: 4;
+        background: rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+      #app.show-sidebar #threads-scrim {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      #sidebar,
+      #chat-area {
+        position: absolute;
+        inset: 0;
+        height: 100%;
+        display: flex !important;
+        border-right: none;
+        transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+        will-change: transform;
+      }
+
+      #sidebar {
+        z-index: 3;
+        width: 86%;
+        transform: translate3d(-105%, 0, 0);
+        box-shadow: none;
+      }
+
+      #chat-area {
+        z-index: 1;
+        width: 100%;
+        transform: translate3d(0, 0, 0);
+      }
+
+      #app.show-sidebar #sidebar {
+        transform: translate3d(0, 0, 0);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.55);
+        pointer-events: auto;
+      }
+
+      #app.show-sidebar #chat-area {
+        transform: translate3d(0, 0, 0);
+        pointer-events: none;
+      }
+
+      #app.show-chat #sidebar {
+        transform: translate3d(-105%, 0, 0);
+        box-shadow: none;
+        pointer-events: none;
+      }
+
+      #app.show-chat #chat-area {
+        transform: translate3d(0, 0, 0);
+        pointer-events: auto;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #sidebar,
+        #chat-area,
+        #threads-scrim {
+          transition: none;
+        }
+      }
+    }
+
+    @media (min-width: 641px) {
+      #threads-scrim { display: none !important; }
+    }
+
+    /* ─── ADMIN OVERLAY ─────────────────────────────────────── */
+    #admin {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: #0d0d0d;
+      flex-direction: column;
+      height: 100vh;
+      height: var(--app-height);
+    }
+    #admin.open { display: flex; }
+
+    #admin-header {
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #admin-header h2 {
+      flex: 1;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    #admin-back, #admin-close {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 0.78rem;
+      padding: 7px 11px;
+      cursor: pointer;
+    }
+    #admin-back { display: none; }
+    #admin-back.visible { display: inline-flex; }
+
+    #admin-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    }
+
+    .admin-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .admin-row .meta { flex: 1; min-width: 0; }
+    .admin-row .title { font-weight: 650; color: #f0f0f0; }
+    .admin-row .sub { font-size: 0.75rem; color: #666; margin-top: 2px; }
+
+    .admin-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .admin-btn {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 9px;
+      color: #ccc;
+      font-size: 0.72rem;
+      padding: 6px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .admin-btn.primary {
+      background: #7e22ce;
+      border-color: #7e22ce;
+      color: #fff;
+    }
+    .admin-btn.danger {
+      border-color: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .admin-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .admin-form label {
+      display: block;
+      font-size: 0.75rem;
+      color: #777;
+      margin: 12px 0 5px;
+    }
+    .admin-form input,
+    .admin-form textarea {
+      width: 100%;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      color: #f0f0f0;
+      font-size: 0.95rem;
+      padding: 10px 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    .admin-form input:focus,
+    .admin-form textarea:focus { border-color: var(--accent-light); }
+    .admin-form textarea { min-height: 160px; resize: vertical; line-height: 1.4; }
+    .admin-form .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .admin-hint { font-size: 0.72rem; color: #555; margin-top: 6px; }
+
+    /* ─── NEW CHAT PICKER SHEET ──────────────────────────────── */
+    #picker {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 180;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #picker.open { display: flex; }
+
+    #picker-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      transition: opacity 0.28s ease;
+    }
+    #picker.open #picker-backdrop { opacity: 1; }
+
+    #picker-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      max-height: 72vh;
+      background: #121212;
+      border: 1px solid #222;
+      border-bottom: none;
+      border-radius: 18px 18px 0 0;
+      display: flex;
+      flex-direction: column;
+      transform: translate3d(0, 110%, 0);
+      transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    #picker.open #picker-sheet { transform: translate3d(0, 0, 0); }
+
+    #picker-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 99px;
+      background: #333;
+      margin: 10px auto 4px;
+      flex-shrink: 0;
+    }
+
+    #picker-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 12px;
+      border-bottom: 1px solid #1c1c1c;
+    }
+    #picker-title {
+      flex: 1;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    #picker-back,
+    #picker-close {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 0.78rem;
+      padding: 7px 10px;
+      cursor: pointer;
+      min-width: 52px;
+    }
+    #picker-back { visibility: hidden; }
+    #picker-back.visible { visibility: visible; }
+
+    #picker-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .picker-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #181818;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+    .picker-row:active { background: #181818; }
+    .picker-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      background: #7e22ce;
+    }
+    .picker-meta { flex: 1; min-width: 0; }
+    .picker-name { font-weight: 650; color: #f0f0f0; font-size: 0.95rem; }
+    .picker-sub { font-size: 0.75rem; color: #666; margin-top: 2px; }
+    .picker-empty {
+      padding: 28px 20px;
+      text-align: center;
+      color: #555;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .picker-actions {
+      padding: 12px 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .picker-action {
+      width: 100%;
+      text-align: left;
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 14px;
+      color: #f0f0f0;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+    .picker-action:active { background: #1a1a1a; }
+    .picker-action strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
+    .picker-action span { display: block; font-size: 0.75rem; color: #777; }
+    .picker-action.primary {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+    }
+    .picker-action.primary strong { color: var(--accent-light); }
+    #picker-body .admin-form { padding: 4px 16px 16px; }
+    #picker-body .admin-toolbar { margin-top: 8px; }
+
+    .browse-section-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 4px 10px;
+    }
+    .browse-section-head .browse-pack-title { margin: 0; flex: 1; }
+    .browse-add-btn {
+      background: none;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: var(--accent-light);
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .browse-tile-wrap { position: relative; }
+    .browse-tile-del {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: #3f1d1d;
+      color: #fca5a5;
+      font-size: 0.7rem;
+      cursor: pointer;
+      line-height: 1;
+      z-index: 1;
+    }
+
+    #threads-empty {
+      display: none;
+      padding: 36px 20px;
+      text-align: center;
+    }
+    #threads-empty.visible { display: block; }
+    #threads-empty p {
+      color: #555;
+      font-size: 0.92rem;
+      margin-bottom: 14px;
+    }
+    #threads-empty-cta {
+      background: #7e22ce;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 650;
+      padding: 11px 18px;
+      cursor: pointer;
+    }
+    #threads-empty-cta:active { background: #a855f7; }
+
+    /* ─── ABOUT SHEET ───────────────────────────────────────── */
+    #about {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 190;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #about.open { display: flex; }
+    #about-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    #about-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      background: #121212;
+      border: 1px solid #222;
+      border-bottom: none;
+      border-radius: 18px 18px 0 0;
+      padding: 18px 18px calc(env(safe-area-inset-bottom, 0px) + 20px);
+    }
+    #about-sheet h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    #about-sheet h2 span { color: var(--accent-light); }
+    #about-sheet .about-tag {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }
+    #about-sheet .about-copy {
+      color: #aaa;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    #about-close {
+      width: 100%;
+      background: #7e22ce;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 650;
+      padding: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div id="app" class="solo show-chat">
+
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <h1 id="sidebar-logo">Chats</h1>
+      <button id="browse-packs" type="button" title="Browse packs" aria-label="Browse packs">&#9638;</button>
+      <button id="start-new-chat" type="button" title="Add persona or start chat" aria-label="Compose">+</button>
+    </div>
+    <div id="threads-pane">
+      <div id="threads-empty">
+        <p>No chats yet.</p>
+        <button id="threads-empty-cta" type="button">Browse packs</button>
+      </div>
+      <div id="contacts-list"></div>
+    </div>
+    <div id="browse-pane">
+      <div id="browse-toolbar">
+        <button id="browse-back" type="button">Back</button>
+        <h2>Browse</h2>
+      </div>
+      <div id="browse-body"></div>
+    </div>
+  </aside>
+
+  <div id="threads-scrim" aria-hidden="true"></div>
+
+  <main id="chat-area">
+    <header id="chat-header">
+      <div class="header-text" id="chat-logo" title="Tap for chats">
+        <h1>Chat<span id="bot-name">EBT</span></h1>
+        <p class="tagline" id="tagline">powered by pure unfiltered energy &#9889;</p>
+      </div>
+      <button id="about-btn" class="header-btn" type="button" title="About" aria-label="About">i</button>
+      <button id="admin-chip" class="header-btn" type="button" title="Admin">Admin</button>
+      <button id="reset-btn" class="header-btn" aria-label="Reset chat" title="Clear this chat">&#x21BA;</button>
+    </header>
+    <div id="chat-empty">No active chat.<br/>Tap the logo to open threads.</div>
+    <div id="chat-window"></div>
+    <div id="input-area">
+      <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
+      <button id="send-btn">&#10148;</button>
+    </div>
+  </main>
+
+</div>
+
+<div id="admin" aria-hidden="true">
+  <div id="admin-header">
+    <button id="admin-back" type="button">Back</button>
+    <h2 id="admin-title">Admin</h2>
+    <button id="admin-close" type="button">Close</button>
+  </div>
+  <div id="admin-body"></div>
+</div>
+
+<div id="picker" aria-hidden="true">
+  <div id="picker-backdrop"></div>
+  <div id="picker-sheet" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+    <div id="picker-handle"></div>
+    <div id="picker-header">
+      <button id="picker-back" type="button">Back</button>
+      <h2 id="picker-title">New chat</h2>
+      <button id="picker-close" type="button" aria-label="Close">Close</button>
+    </div>
+    <div id="picker-body"></div>
+  </div>
+</div>
+
+<div id="about" aria-hidden="true">
+  <div id="about-backdrop"></div>
+  <div id="about-sheet" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <h2 id="about-title">Chat<span>EBT</span></h2>
+    <p class="about-tag">powered by pure unfiltered energy &#9889;</p>
+    <p class="about-copy">Browse packs to discover characters. Use + to add your own personas to My Personas, start a new chat, or import JSON. Optional: point a persona at a local Hermes bridge for live comebacks.</p>
+    <button id="about-close" type="button">Close</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const DEFAULT_PERSONALITY = {
+    name:        'EBT',
+    avatar:      '\u{1F92C}',
+    accentColor: '#7e22ce',
+    accentLight: '#a855f7',
+    accentBg:    '#18101f',
+    accentBorder:'#2d1b45',
+    greeting:    'Aye what’s good. Ask me anything. Go ahead. I dare you.',
+    responses: [
+      'shiiiiiieet.',
+      'SHIIIIIIEET.',
+      'shiiiiiieet... \u{1F633}',
+      'shiiiiiiiiiiiiiieet bro.',
+      'shiiiiiiieet, for real??',
+      'man... shiiiiiieet.',
+      'shiiiiiieet homie, that’s wild.',
+      'SHIIIIIIEET — I’m not even gonna lie.',
+      'shiiiiiieet you really said that huh.',
+      'shiiiiiieet… okay. okay okay okay.',
+      '...shiiiiiieet.',
+      'shiiiiiieet I had to read that twice.',
+      'shiiiiiieet bro I cannot \u{1F480}',
+      'shiiiiiieet — I felt that.',
+      'shiiiiiieet and I oop—',
+      'shiiiiiieet fr fr no cap.',
+      'bro… shiiiiiieet.',
+      'shiiiiiieet that’s tuff.',
+      'shiiiiiieet on everything.',
+      'SHIIIIIIEET not you tho \u{1F480}',
+      'aw hell nah you got me FUCKED UP.',
+      'AWW HELL NAH. You got me FUCKED ALL THE WAY UP.',
+      'aw HELL nah, you got me fucked up fr fr.',
+      'nah. NAH. You really got me fucked up right now.',
+      'aw hell nah bro I KNOW you didn’t.',
+      'hell nah you got me fucked up \u{1F480}',
+      'aw nah nah nah — you got me fucked up.',
+      'you got me ALL kinds of fucked up rn.',
+      'AWW HELL NAH not today. You got me fucked up.',
+      'nah for real, you got me fucked up with that.',
+      'aw hell nah… you really said that huh.',
+      'bro. BRO. You got me fucked up.',
+      'aw hell nah — I’m not okay rn.',
+      'you got me COMPLETELY fucked up. Wow.',
+      'aw hell NAH. Delete this.',
+      'nah fam you got me fucked up I KNOW you playin.',
+      'you got me all the way fucked up.',
+      'you foul as hell for that.',
+      'shiiiiiieet… aw hell nah. You got me fucked up.',
+      'AWW HELL NAH — shiiiiiieet bro \u{1F480}',
+      'shiiiiiieet, nah nah nah you got me fucked up.',
+      'aw hell nah… shiiiiiieet I’m done.',
+      'shiiiiiieet. Just… shiiiiiieet. You got me fucked up.',
+      'nah shiiiiiieet fr fr you got me ALL the way fucked up.',
+      'aw hell nah shiiiiiieet what is WRONG with you.',
+      'chile…',
+      'CHILE ANYWAYS…',
+      'bruh. just… bruh.',
+      'BRUH \u{1F480}',
+      'on god?? on GOD??',
+      'no cap that’s wild.',
+      'deadass??',
+      'deadass bro.',
+      'you wildin fr.',
+      'you WILDIN.',
+      'you buggin rn.',
+      'the audacity. THE AUDACITY.',
+      'I’m dead \u{1F480}\u{1F480}\u{1F480}',
+      'I AM DECEASED.',
+      'tf did you just say to me??',
+      'WHO ASKED.',
+      'nobody asked but okay.',
+      'L + ratio.',
+      'bro really said that \u{1F62D}',
+      'stop playin with me.',
+      'STOP PLAYIN.',
+      'you thought you ate with that one huh.',
+      'you did NOT eat.',
+      'oh you thought??',
+      'on my mama that’s wild.',
+      'big facts tho.',
+      'periodt.',
+      'PERIODT.',
+      'bestie no. just… no.',
+      'finna cry rn fr.',
+      'I’m finna catch a case.',
+      'you playing too much.',
+      'you are REALLY playing too much.',
+      'that’s tuff.',
+      'THAT IS TUFF.',
+      'respectfully… shut the fuck up.',
+      'respectfully bro what \u{1F62D}',
+      'issa no from me dawg.',
+      'it’s giving… absolutely nothing.',
+      'it’s giving unhinged and I’m here for it.',
+      'catch me outside.',
+      'catch me OUTSIDE, how bout dat.',
+      'what the fuck is wrong with you fr.',
+      'my guy really said that \u{1F480}',
+      'bro is NOT okay \u{1F480}',
+      'okay but WHY though.',
+      'hold up. HOLD UP.',
+      'wait wait wait wait WAIT.',
+      'say sike right now.',
+      'SAY SIKE.',
+      'you are absolutely cooked.',
+      'done. I’m done. Goodbye.',
+      'ion wanna hear that shit.',
+      'what in the entire fuck.',
+      'I’m calling your mama.',
+      'your mama should’ve taken the phone.',
+      'go to bed bro. right now. go.',
+      'nah you tweaking fr fr.',
+      'we can’t be friends no more.',
+      'that’s giving federal offense.',
+      'this is why nobody invites you nowhere.',
+      'you really said that out loud. to ME.',
+      'bruh said the quiet part LOUD.',
+      'no further questions.',
+      'bro got me tight as fuck rn.',
+      'say that shit again I dare you.',
+      'SAY IT AGAIN.',
+      'that was some bullshit and you know it.',
+      'absolute bullshit. ten out of ten bullshit.',
+      'bro got the NERVE to say that shit.',
+      'nah fuck that and fuck what you said.',
+      'get the fuck outta here.',
+      'you got me fucked up AND sideways.',
+      'bro you gotta be out your damn mind.',
+      'that shit was not it. not even close.',
+      'bro said some dumb ass shit and kept it moving.',
+      'that’s dumb as hell bro.',
+      'oh hell no. oh HELL no.',
+      'nah bro hell no.',
+      'you must got me confused with somebody who gives a fuck.',
+      'bro really woke up today and chose chaos.',
+      'I will not be taking questions at this time.',
+      'next question.',
+    ]
+  };
+
+
+  const STORAGE_PACKS = 'chater.packs';
+  const STORAGE_SESSIONS = 'chater.sessions';
+  const STORAGE_ACTIVE = 'chater.activeSessionId';
+  const STORAGE_ADMIN = 'chater.adminUnlocked';
+  const STORAGE_VERSION = 'chater.schemaVersion';
+  const STORAGE_SEEN_TAGLINE = 'chater.seenTagline';
+  const SCHEMA_VERSION = 1;
+
+  let sessions = [];
+  let packs = [];
+  let activeSessionId = null;
+  let isBotTyping = false;
+  let adminView = { screen: 'packs', packId: null, personaId: null };
+  let undoTimer = null;
+  let pendingUndo = null;
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function clonePersonality(p) {
+    return {
+      ...DEFAULT_PERSONALITY,
+      ...p,
+      responses: Array.isArray(p.responses) ? p.responses.slice() : DEFAULT_PERSONALITY.responses.slice()
+    };
+  }
+
+  function seedDefaultPack() {
+    return [
+      {
+        id: 'my-personas',
+        name: 'My Personas',
+        personal: true,
+        builtin: false,
+        personas: []
+      },
+      {
+        id: 'default',
+        name: 'Default',
+        builtin: true,
+        personas: [{
+          id: 'persona-ebt',
+          ...clonePersonality(DEFAULT_PERSONALITY)
+        }]
+      }
+    ];
+  }
+
+  function ensureMyPersonasPack() {
+    let mine = packs.find(p => p.id === 'my-personas' || p.personal);
+    if (!mine) {
+      mine = {
+        id: 'my-personas',
+        name: 'My Personas',
+        personal: true,
+        builtin: false,
+        personas: []
+      };
+      packs.unshift(mine);
+      saveState();
+    } else {
+      mine.personal = true;
+      if (!mine.id) mine.id = 'my-personas';
+    }
+    return mine;
+  }
+
+  // ── DOM refs ────────────────────────────────────────────────
+  const appEl         = document.getElementById('app');
+  const contactsList  = document.getElementById('contacts-list');
+  const threadsEmpty  = document.getElementById('threads-empty');
+  const chatWindow    = document.getElementById('chat-window');
+  const userInput     = document.getElementById('user-input');
+  const sendBtn       = document.getElementById('send-btn');
+  const resetBtn      = document.getElementById('reset-btn');
+  const startNewChat  = document.getElementById('start-new-chat');
+  const browsePacksBtn = document.getElementById('browse-packs');
+  const browseBack    = document.getElementById('browse-back');
+  const browseBody    = document.getElementById('browse-body');
+  const threadsEmptyCta = document.getElementById('threads-empty-cta');
+  const botNameEl     = document.getElementById('bot-name');
+  const chatLogo      = document.getElementById('chat-logo');
+  const sidebarLogo   = document.getElementById('sidebar-logo');
+  const taglineEl     = document.getElementById('tagline');
+  const aboutBtn      = document.getElementById('about-btn');
+  const aboutEl       = document.getElementById('about');
+  const aboutClose    = document.getElementById('about-close');
+  const aboutBackdrop = document.getElementById('about-backdrop');
+  const toast         = document.getElementById('toast');
+  const adminEl       = document.getElementById('admin');
+  const adminBody     = document.getElementById('admin-body');
+  const adminTitle    = document.getElementById('admin-title');
+  const adminBack     = document.getElementById('admin-back');
+  const adminClose    = document.getElementById('admin-close');
+  const adminChip     = document.getElementById('admin-chip');
+  const threadsScrim  = document.getElementById('threads-scrim');
+  const sidebarEl     = document.getElementById('sidebar');
+  const pickerEl      = document.getElementById('picker');
+  const pickerBody    = document.getElementById('picker-body');
+  const pickerTitle   = document.getElementById('picker-title');
+  const pickerBack    = document.getElementById('picker-back');
+  const pickerClose   = document.getElementById('picker-close');
+  const pickerBackdrop = document.getElementById('picker-backdrop');
+
+  let pickerView = { screen: 'packs', packId: null };
+
+  function setView(view) {
+    const solo = sessions.length <= 1;
+    const pane = view === 'sidebar' ? 'show-sidebar' : 'show-chat';
+    const noSession = !activeSessionId || !sessions.find(s => s.id === activeSessionId);
+    appEl.className = [solo ? 'solo' : 'multi', pane, noSession ? 'no-session' : ''].filter(Boolean).join(' ');
+    if (view === 'sidebar') dismissTagline();
+  }
+
+  function hasSeenTagline() {
+    return localStorage.getItem(STORAGE_SEEN_TAGLINE) === '1';
+  }
+
+  function updateHeaderChrome() {
+    const seen = hasSeenTagline();
+    taglineEl.classList.toggle('hidden', seen);
+    aboutBtn.classList.toggle('visible', seen);
+  }
+
+  function dismissTagline() {
+    if (!hasSeenTagline()) {
+      localStorage.setItem(STORAGE_SEEN_TAGLINE, '1');
+    }
+    updateHeaderChrome();
+  }
+
+  function openAbout() {
+    dismissTagline();
+    aboutEl.classList.add('open');
+    aboutEl.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeAbout() {
+    aboutEl.classList.remove('open');
+    aboutEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_VERSION, String(SCHEMA_VERSION));
+      localStorage.setItem(STORAGE_SESSIONS, JSON.stringify(sessions));
+      localStorage.setItem(STORAGE_ACTIVE, activeSessionId || '');
+      localStorage.setItem(STORAGE_PACKS, JSON.stringify(packs));
+    } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      const ver = parseInt(localStorage.getItem(STORAGE_VERSION) || '1', 10);
+      if (ver > SCHEMA_VERSION) {
+        console.warn('Newer ChatEBT data version found; loading best-effort.');
+      }
+      const rawPacks = localStorage.getItem(STORAGE_PACKS);
+      packs = rawPacks ? JSON.parse(rawPacks) : seedDefaultPack();
+      if (!Array.isArray(packs) || packs.length === 0) packs = seedDefaultPack();
+      ensureMyPersonasPack();
+
+      const rawSessions = localStorage.getItem(STORAGE_SESSIONS);
+      if (rawSessions) {
+        const parsed = JSON.parse(rawSessions);
+        if (Array.isArray(parsed)) sessions = parsed;
+      }
+      const savedActive = localStorage.getItem(STORAGE_ACTIVE);
+      if (savedActive) activeSessionId = savedActive;
+    } catch (e) {
+      packs = seedDefaultPack();
+      sessions = [];
+      activeSessionId = null;
+    }
+  }
+
+  // ── viewport height fix ─────────────────────────────────────
+  function syncHeight() {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+  syncHeight();
+  (window.visualViewport || window).addEventListener('resize', () => {
+    syncHeight();
+    requestAnimationFrame(scrollBottom);
+  });
+
+  // ── audio ────────────────────────────────────────────────────
+  const replySound = new Audio('chater-e-reply.m4a');
+  replySound.preload = 'auto';
+  let audioUnlocked = false;
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    replySound.muted = true;
+    const p = replySound.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        replySound.pause();
+        replySound.currentTime = 0;
+        replySound.muted = false;
+        audioUnlocked = true;
+      }).catch(() => { replySound.muted = false; });
+    } else {
+      replySound.pause();
+      replySound.currentTime = 0;
+      replySound.muted = false;
+      audioUnlocked = true;
+    }
+  }
+  function playReplySound() {
+    try {
+      replySound.muted = false;
+      replySound.currentTime = 0;
+      const p = replySound.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) {}
+  }
+
+  // ── toast ────────────────────────────────────────────────────
+  let toastTimer;
+  function clearPendingUndo() {
+    pendingUndo = null;
+    if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+  }
+
+  function showToast(msg, isError = false, onUndo = null) {
+    clearTimeout(toastTimer);
+    clearPendingUndo();
+    toast.textContent = '';
+    const label = document.createElement('span');
+    label.textContent = msg;
+    toast.appendChild(label);
+    if (typeof onUndo === 'function') {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toast-undo';
+      btn.textContent = 'Undo';
+      btn.addEventListener('click', () => {
+        clearTimeout(toastTimer);
+        clearPendingUndo();
+        toast.className = '';
+        onUndo();
+      });
+      toast.appendChild(btn);
+      pendingUndo = onUndo;
+      undoTimer = setTimeout(() => { pendingUndo = null; undoTimer = null; }, 3000);
+    }
+    toast.className = 'show' + (isError ? ' error' : '');
+    toastTimer = setTimeout(() => {
+      toast.className = '';
+      clearPendingUndo();
+    }, 3000);
+  }
+
+  function formatRelativeTime(ts) {
+    if (!ts) return '';
+    const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (sec < 45) return 'now';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm';
+    if (sec < 86400) return Math.floor(sec / 3600) + 'h';
+    try {
+      return new Date(ts).toLocaleDateString(undefined, { weekday: 'short' });
+    } catch {
+      return '';
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── logo gestures: tap = threads, 10 taps / 10s hold = admin ─
+  function attachLogoGestures(el, { onTap }) {
+    let tapCount = 0;
+    let tapTimer = null;
+    let holdTimer = null;
+    let holdFired = false;
+
+    function resetTaps() {
+      tapCount = 0;
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+    }
+
+    function openAdminFromGesture() {
+      resetTaps();
+      openAdmin();
+    }
+
+    el.addEventListener('pointerdown', e => {
+      if (e.button != null && e.button !== 0) return;
+      holdFired = false;
+      holdTimer = setTimeout(() => {
+        holdFired = true;
+        openAdminFromGesture();
+      }, 10000);
+    });
+
+    function clearHold() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }
+
+    el.addEventListener('pointerup', clearHold);
+    el.addEventListener('pointerleave', clearHold);
+    el.addEventListener('pointercancel', clearHold);
+
+    // click handles normal tap + 10-tap unlock (works with mouse, touch, and automation)
+    el.addEventListener('click', e => {
+      if (holdFired) {
+        holdFired = false;
+        e.preventDefault();
+        return;
+      }
+      tapCount += 1;
+      if (tapTimer) clearTimeout(tapTimer);
+      if (tapCount >= 10) {
+        openAdminFromGesture();
+        return;
+      }
+      // Debounce navigation so a 10-tap unlock can finish without leaving the screen.
+      tapTimer = setTimeout(() => {
+        const count = tapCount;
+        resetTaps();
+        if (count > 0 && count < 10) onTap();
+      }, 400);
+    });
+  }
+
+  // ── contacts / threads list ──────────────────────────────────
+  function closeAllSwipes(except) {
+    contactsList.querySelectorAll('.contact-item.swiped').forEach(el => {
+      if (el !== except) el.classList.remove('swiped');
+    });
+  }
+
+  function removeSession(id) {
+    const idx = sessions.findIndex(s => s.id === id);
+    if (idx < 0) return;
+    const snapshot = {
+      session: JSON.parse(JSON.stringify(sessions[idx])),
+      idx,
+      wasActive: activeSessionId === id,
+      prevActive: activeSessionId
+    };
+    sessions.splice(idx, 1);
+    if (snapshot.wasActive) {
+      activeSessionId = sessions[0] ? sessions[0].id : null;
+    }
+    saveState();
+    renderContacts();
+    if (activeSessionId) {
+      const keep = activeSessionId;
+      selectSession(keep);
+      setView('sidebar');
+    } else {
+      botNameEl.textContent = 'EBT';
+      chatWindow.innerHTML = '';
+      setView('sidebar');
+    }
+    showToast('Chat removed', false, () => {
+      sessions.splice(Math.min(snapshot.idx, sessions.length), 0, snapshot.session);
+      activeSessionId = snapshot.wasActive ? snapshot.session.id : snapshot.prevActive;
+      saveState();
+      renderContacts();
+      if (activeSessionId) selectSession(activeSessionId);
+      setView('sidebar');
+      showToast('Chat restored');
+    });
+  }
+
+  function confirmRemoveSession(id) {
+    const session = sessions.find(s => s.id === id);
+    const name = session?.personality?.name || 'this chat';
+    if (confirm('Delete chat with ' + name + '?')) removeSession(id);
+  }
+
+  function bindThreadGestures(row, item, sessionId) {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let swiping = false;
+    let longTimer = null;
+    let longFired = false;
+    let moved = false;
+
+    function clearLong() {
+      if (longTimer) { clearTimeout(longTimer); longTimer = null; }
+    }
+
+    item.addEventListener('pointerdown', e => {
+      if (e.button != null && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      tracking = true;
+      swiping = false;
+      moved = false;
+      longFired = false;
+      clearLong();
+      longTimer = setTimeout(() => {
+        longFired = true;
+        tracking = false;
+        confirmRemoveSession(sessionId);
+      }, 500);
+      try { item.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    item.addEventListener('pointermove', e => {
+      if (!tracking) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        moved = true;
+        clearLong();
+      }
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+        swiping = true;
+        clearLong();
+      }
+      if (swiping) {
+        const tx = Math.max(-84, Math.min(0, dx));
+        item.style.transition = 'none';
+        item.style.transform = 'translateX(' + tx + 'px)';
+      }
+    });
+
+    function endPointer(e) {
+      if (!tracking && !swiping) { clearLong(); return; }
+      tracking = false;
+      clearLong();
+      item.style.transition = '';
+      if (longFired) {
+        item.style.transform = '';
+        item.classList.remove('swiped');
+        return;
+      }
+      if (swiping) {
+        const dx = e.clientX - startX;
+        if (dx < -42) {
+          closeAllSwipes(item);
+          item.classList.add('swiped');
+          item.style.transform = '';
+        } else {
+          item.classList.remove('swiped');
+          item.style.transform = '';
+        }
+        swiping = false;
+        return;
+      }
+      item.style.transform = '';
+      if (!moved) {
+        closeAllSwipes();
+        selectSession(sessionId);
+      }
+    }
+
+    item.addEventListener('pointerup', endPointer);
+    item.addEventListener('pointercancel', () => {
+      tracking = false;
+      swiping = false;
+      clearLong();
+      item.style.transition = '';
+      item.style.transform = '';
+    });
+
+    row.querySelector('.contact-delete').addEventListener('click', ev => {
+      ev.stopPropagation();
+      confirmRemoveSession(sessionId);
+    });
+  }
+
+  function renderContacts() {
+    contactsList.innerHTML = '';
+    threadsEmpty.classList.toggle('visible', sessions.length === 0);
+    sessions.forEach(session => {
+      const last    = session.messages[session.messages.length - 1];
+      const preview = last ? last.text : 'No messages yet';
+      const p       = session.personality;
+
+      const row = document.createElement('div');
+      row.className = 'contact-row';
+
+      const del = document.createElement('button');
+      del.className = 'contact-delete';
+      del.type = 'button';
+      del.textContent = 'Delete';
+
+      const item = document.createElement('div');
+      item.className = 'contact-item' + (session.id === activeSessionId ? ' active' : '');
+      item.innerHTML =
+        '<div class="contact-avatar" style="background:' + (p.accentColor || '#7e22ce') + '">' + escapeHtml(p.avatar || '') + '</div>' +
+        '<div class="contact-info">' +
+          '<div class="contact-top">' +
+            '<div class="contact-name">' + escapeHtml(p.name || 'Chat') + '</div>' +
+            '<div class="contact-time">' + escapeHtml(formatRelativeTime(last && last.ts)) + '</div>' +
+          '</div>' +
+          '<div class="contact-preview">' + escapeHtml((preview || '').slice(0, 50)) + '</div>' +
+        '</div>';
+
+      row.appendChild(del);
+      row.appendChild(item);
+      bindThreadGestures(row, item, session.id);
+      contactsList.appendChild(row);
+    });
+  }
+
+  // ── select / switch session ──────────────────────────────────
+  function selectSession(id) {
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+    closeBrowse();
+    activeSessionId = id;
+
+    const p    = session.personality;
+    const root = document.documentElement;
+    root.style.setProperty('--accent',        p.accentColor  || DEFAULT_PERSONALITY.accentColor);
+    root.style.setProperty('--accent-light',  p.accentLight  || DEFAULT_PERSONALITY.accentLight);
+    root.style.setProperty('--accent-bg',     p.accentBg     || DEFAULT_PERSONALITY.accentBg);
+    root.style.setProperty('--accent-border', p.accentBorder || DEFAULT_PERSONALITY.accentBorder);
+
+    botNameEl.textContent = p.name || DEFAULT_PERSONALITY.name;
+
+    renderChatMessages(session);
+    renderContacts();
+    saveState();
+    setView('chat');
+    userInput.focus();
+  }
+
+  function renderChatMessages(session) {
+    chatWindow.innerHTML = '';
+    session.messages.forEach(msg => appendBubble(msg.text, msg.role, session.personality, false));
+    scrollBottom();
+  }
+
+  function appendBubble(text, role, personality, save = true) {
+    if (save) {
+      const session = sessions.find(s => s.id === activeSessionId);
+      if (session) {
+        session.messages.push({ role, text, ts: Date.now() });
+        renderContacts();
+        saveState();
+      }
+    }
+
+    const p   = personality || sessions.find(s => s.id === activeSessionId)?.personality || DEFAULT_PERSONALITY;
+    const row = document.createElement('div');
+    row.className = 'bubble-row ' + role;
+
+    const av = document.createElement('div');
+    av.className = role === 'bot' ? 'av' : 'av user-av';
+    av.textContent = role === 'bot' ? p.avatar : '\u{1F464}';
+    if (role === 'bot') av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + role;
+    bubble.textContent = text;
+
+    row.appendChild(av);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+
+  function addTypingIndicator(p) {
+    const row = document.createElement('div');
+    row.className = 'bubble-row bot';
+    row.id = 'typing-row';
+    const av = document.createElement('div');
+    av.className = 'av';
+    av.textContent = p.avatar;
+    av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bot';
+    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    row.appendChild(av);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-row');
+    if (el) el.remove();
+  }
+
+  function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
+
+  async function getBotReply(session) {
+    const p = session.personality || DEFAULT_PERSONALITY;
+    const endpoint = (p.agentEndpoint || '').trim();
+    if ((p.replyMode === 'agent' || endpoint) && endpoint) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20000);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            persona: {
+              name: p.name,
+              greeting: p.greeting,
+              systemPrompt: p.systemPrompt || ('You are ' + p.name + '. Stay in character. Keep replies short and punchy.')
+            },
+            messages: (session.messages || []).slice(-24).map(m => ({
+              role: m.role === 'bot' ? 'assistant' : 'user',
+              content: m.text
+            }))
+          }),
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data && typeof data.reply === 'string' && data.reply.trim()) {
+          return data.reply.trim();
+        }
+        throw new Error('empty reply');
+      } catch (err) {
+        showToast('Agent unreachable — canned reply', true);
+      }
+    }
+    const pool = p.responses || DEFAULT_PERSONALITY.responses;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  async function handleSend() {
+    if (!activeSessionId || isBotTyping) return;
+    const text = userInput.value.trim();
+    if (!text) return;
+    unlockAudio();
+
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    sendBtn.disabled = true;
+    isBotTyping = true;
+
+    appendBubble(text, 'user', session.personality, true);
+    addTypingIndicator(session.personality);
+
+    await new Promise(r => setTimeout(r, 400 + Math.random() * 500));
+    const reply = await getBotReply(session);
+    removeTypingIndicator();
+    appendBubble(reply, 'bot', session.personality, true);
+    playReplySound();
+
+    isBotTyping = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+
+  function resetActiveSession() {
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+    removeTypingIndicator();
+    isBotTyping = false;
+    sendBtn.disabled = false;
+    session.messages = [];
+    const greeting = session.personality.greeting || DEFAULT_PERSONALITY.greeting;
+    session.messages.push({ role: 'bot', text: greeting, ts: Date.now() });
+    renderChatMessages(session);
+    renderContacts();
+    saveState();
+    showToast('\u{1F504} Chat cleared');
+  }
+
+  function addSessionFromPersonality(parsed, toastMsg) {
+    if (!Array.isArray(parsed.responses) || parsed.responses.length === 0) {
+      showToast('Needs a non-empty responses list.', true);
+      return null;
+    }
+    const p = clonePersonality(parsed);
+    const session = {
+      id: uid(),
+      personality: p,
+      messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting, ts: Date.now() }]
+    };
+    sessions.push(session);
+    saveState();
+    renderContacts();
+    selectSession(session.id);
+    showToast(toastMsg || ('Added: ' + p.name));
+    return session;
+  }
+
+  // ── New chat picker (pack → persona) ─────────────────────────
+  function packsForPicker() {
+    const list = (packs || []).slice();
+    list.sort((a, b) => {
+      if (a.personal && !b.personal) return -1;
+      if (!a.personal && b.personal) return 1;
+      if (a.builtin && !b.builtin) return 1;
+      if (!a.builtin && b.builtin) return -1;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+    return list;
+  }
+
+  function openCompose() {
+    closeBrowse();
+    setView('sidebar');
+    pickerView = { screen: 'home', packId: null };
+    pickerEl.classList.add('open');
+    pickerEl.setAttribute('aria-hidden', 'false');
+    renderPicker();
+  }
+
+  function openPicker() {
+    openCompose();
+  }
+
+  function openAddPersonaForm() {
+    closeBrowse();
+    setView('sidebar');
+    ensureMyPersonasPack();
+    pickerView = { screen: 'add', packId: 'my-personas' };
+    pickerEl.classList.add('open');
+    pickerEl.setAttribute('aria-hidden', 'false');
+    renderPicker();
+  }
+
+  function closePicker() {
+    pickerEl.classList.remove('open');
+    pickerEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function openBrowse() {
+    closePicker();
+    closeAbout();
+    setView('sidebar');
+    sidebarEl.classList.add('browsing');
+    renderBrowse();
+  }
+
+  function closeBrowse() {
+    sidebarEl.classList.remove('browsing');
+  }
+
+  function renderBrowse() {
+    ensureMyPersonasPack();
+    const list = packsForPicker();
+    if (!list.length) {
+      browseBody.innerHTML = '<div class="browse-empty">No packs yet.</div>';
+      return;
+    }
+    let html = '';
+    list.forEach(pack => {
+      const personas = pack.personas || [];
+      const isPersonal = !!pack.personal;
+      html += '<section class="browse-section"><div class="browse-section-head">' +
+        '<div class="browse-pack-title">' + escapeHtml(pack.name) +
+          (pack.builtin ? ' · built-in' : '') +
+          (isPersonal ? ' · yours' : '') + '</div>';
+      if (isPersonal) {
+        html += '<button type="button" class="browse-add-btn" data-browse-add>Add</button>';
+      }
+      html += '</div>';
+      if (!personas.length) {
+        html += '<div class="browse-empty">' +
+          (isPersonal ? 'No personas yet. Tap Add to create one.' : 'No personas in this pack.') +
+          '</div>';
+      } else {
+        html += '<div class="browse-grid">';
+        personas.forEach(persona => {
+          html += '<div class="browse-tile-wrap">' +
+            (isPersonal
+              ? '<button type="button" class="browse-tile-del" data-del-pack="' + pack.id +
+                '" data-del-persona="' + persona.id + '" title="Delete">×</button>'
+              : '') +
+            '<button type="button" class="browse-tile" data-browse-pack="' + pack.id +
+            '" data-browse-persona="' + persona.id + '">' +
+            '<div class="browse-tile-avatar" style="background:' + escapeHtml(persona.accentColor || '#7e22ce') + '">' +
+              escapeHtml(persona.avatar || '💬') +
+            '</div>' +
+            '<div class="browse-tile-name">' + escapeHtml(persona.name || 'Persona') + '</div>' +
+          '</button></div>';
+        });
+        html += '</div>';
+      }
+      html += '</section>';
+    });
+    browseBody.innerHTML = html;
+  }
+
+  function renderPicker() {
+    const screen = pickerView.screen;
+    pickerBack.classList.toggle('visible', screen === 'packs' || screen === 'personas' || screen === 'add');
+
+    if (screen === 'home') {
+      pickerTitle.textContent = 'Compose';
+      pickerBody.innerHTML =
+        '<div class="picker-actions">' +
+          '<button type="button" class="picker-action primary" data-compose="add">' +
+            '<strong>Add a persona</strong>' +
+            '<span>Create one in My Personas — no admin needed</span>' +
+          '</button>' +
+          '<button type="button" class="picker-action" data-compose="chat">' +
+            '<strong>New chat</strong>' +
+            '<span>Pick someone from your packs</span>' +
+          '</button>' +
+          '<button type="button" class="picker-action" data-compose="import">' +
+            '<strong>Import JSON</strong>' +
+            '<span>Load a personality file into My Personas</span>' +
+          '</button>' +
+        '</div>';
+      return;
+    }
+
+    if (screen === 'add') {
+      pickerTitle.textContent = 'Add persona';
+      pickerBody.innerHTML =
+        '<form class="admin-form" id="add-persona-form">' +
+          '<label>Name</label><input name="name" placeholder="e.g. Jim" required />' +
+          '<label>Avatar</label><input name="avatar" placeholder="☕" value="💬" />' +
+          '<label>Greeting</label><input name="greeting" placeholder="Hey." value="Hey." />' +
+          '<label>Canned replies (one per line)</label>' +
+          '<textarea name="responses" placeholder="Okay.&#10;Sure.&#10;Hmm.">Okay.\nSure.\nHmm.</textarea>' +
+          '<label>Optional agent endpoint (Hermes / local bridge)</label>' +
+          '<input name="agentEndpoint" placeholder="http://127.0.0.1:8787/reply" />' +
+          '<p class="admin-hint">Leave blank to use canned replies. Run agent-bridge.js locally to connect Hermes.</p>' +
+          '<div class="admin-toolbar">' +
+            '<button class="admin-btn primary" type="submit">Save & chat</button>' +
+            '<button class="admin-btn" type="button" data-compose="home">Cancel</button>' +
+          '</div>' +
+        '</form>';
+      const form = document.getElementById('add-persona-form');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        savePersonaFromForm(form, true);
+      });
+      return;
+    }
+
+    if (screen === 'packs') {
+      pickerTitle.textContent = 'New chat';
+      const list = packsForPicker().filter(p => (p.personas || []).length > 0);
+      if (!list.length) {
+        pickerBody.innerHTML = '<div class="picker-empty">No personas yet. Add one first.</div>';
+        return;
+      }
+      pickerBody.innerHTML = list.map(pack => {
+        const count = (pack.personas || []).length;
+        return '<div class="picker-row" data-pick-pack="' + pack.id + '">' +
+          '<div class="picker-avatar" style="background:#7e22ce">📦</div>' +
+          '<div class="picker-meta">' +
+            '<div class="picker-name">' + escapeHtml(pack.name) + '</div>' +
+            '<div class="picker-sub">' + count + ' persona' + (count === 1 ? '' : 's') +
+              (pack.personal ? ' · yours' : '') +
+              (pack.builtin ? ' · built-in' : '') + '</div>' +
+          '</div></div>';
+      }).join('');
+      return;
+    }
+
+    const pack = getPack(pickerView.packId);
+    pickerTitle.textContent = pack ? pack.name : 'Personas';
+    const personas = pack?.personas || [];
+    if (!personas.length) {
+      pickerBody.innerHTML = '<div class="picker-empty">No personas in this pack.</div>';
+      return;
+    }
+    pickerBody.innerHTML = personas.map(persona => {
+      return '<div class="picker-row" data-pick-persona="' + persona.id + '">' +
+        '<div class="picker-avatar" style="background:' + escapeHtml(persona.accentColor || '#7e22ce') + '">' +
+          escapeHtml(persona.avatar || '💬') +
+        '</div>' +
+        '<div class="picker-meta">' +
+          '<div class="picker-name">' + escapeHtml(persona.name || 'Persona') + '</div>' +
+          '<div class="picker-sub">' + (persona.agentEndpoint ? 'Agent + canned fallback' : 'Start chat') + '</div>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  function savePersonaFromForm(form, startChat) {
+    const fd = new FormData(form);
+    const responses = String(fd.get('responses') || '')
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (!responses.length) {
+      showToast('Add at least one canned reply line.', true);
+      return;
+    }
+    const endpoint = String(fd.get('agentEndpoint') || '').trim();
+    const persona = {
+      id: uid(),
+      name: String(fd.get('name') || 'Persona').trim() || 'Persona',
+      avatar: String(fd.get('avatar') || '💬'),
+      greeting: String(fd.get('greeting') || 'Hey.'),
+      accentColor: DEFAULT_PERSONALITY.accentColor,
+      accentLight: DEFAULT_PERSONALITY.accentLight,
+      accentBg: DEFAULT_PERSONALITY.accentBg,
+      accentBorder: DEFAULT_PERSONALITY.accentBorder,
+      responses,
+      replyMode: endpoint ? 'agent' : 'canned',
+      agentEndpoint: endpoint || ''
+    };
+    const mine = ensureMyPersonasPack();
+    mine.personas.push(persona);
+    saveState();
+    closePicker();
+    if (startChat) {
+      addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+    } else {
+      showToast('Saved ' + persona.name);
+      openBrowse();
+    }
+  }
+
+  function importPersonaToMyPack(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!Array.isArray(data.responses) || !data.responses.length) throw new Error('bad');
+        const persona = { id: uid(), ...clonePersonality(data) };
+        if (data.agentEndpoint) {
+          persona.agentEndpoint = data.agentEndpoint;
+          persona.replyMode = 'agent';
+        }
+        const mine = ensureMyPersonasPack();
+        mine.personas.push(persona);
+        saveState();
+        closePicker();
+        showToast('Imported ' + (persona.name || 'persona'));
+        openBrowse();
+      } catch {
+        showToast('Invalid persona JSON.', true);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  pickerBody.addEventListener('click', e => {
+    const compose = e.target.closest('[data-compose]');
+    if (compose) {
+      const act = compose.getAttribute('data-compose');
+      if (act === 'add') {
+        pickerView = { screen: 'add', packId: 'my-personas' };
+        renderPicker();
+      } else if (act === 'chat') {
+        pickerView = { screen: 'packs', packId: null };
+        renderPicker();
+      } else if (act === 'home') {
+        pickerView = { screen: 'home', packId: null };
+        renderPicker();
+      } else if (act === 'import') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = () => importPersonaToMyPack(input.files[0]);
+        input.click();
+      }
+      return;
+    }
+    const packRow = e.target.closest('[data-pick-pack]');
+    if (packRow) {
+      const pack = getPack(packRow.getAttribute('data-pick-pack'));
+      if (!pack) return;
+      if (!(pack.personas || []).length) {
+        showToast('No personas in this pack.', true);
+        return;
+      }
+      pickerView = { screen: 'personas', packId: pack.id };
+      renderPicker();
+      return;
+    }
+    const personaRow = e.target.closest('[data-pick-persona]');
+    if (personaRow) {
+      const pack = getPack(pickerView.packId);
+      const persona = pack?.personas?.find(p => p.id === personaRow.getAttribute('data-pick-persona'));
+      if (!persona) return;
+      closePicker();
+      addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+    }
+  });
+
+  browseBody.addEventListener('click', e => {
+    if (e.target.closest('[data-browse-add]')) {
+      openAddPersonaForm();
+      return;
+    }
+    const del = e.target.closest('[data-del-persona]');
+    if (del) {
+      const pack = getPack(del.getAttribute('data-del-pack'));
+      const pid = del.getAttribute('data-del-persona');
+      const persona = pack?.personas?.find(p => p.id === pid);
+      if (!pack || !persona || !pack.personal) return;
+      if (!confirm('Delete persona “' + persona.name + '”?')) return;
+      pack.personas = pack.personas.filter(p => p.id !== pid);
+      saveState();
+      renderBrowse();
+      showToast('Deleted ' + persona.name);
+      return;
+    }
+    const tile = e.target.closest('[data-browse-persona]');
+    if (!tile) return;
+    const pack = getPack(tile.getAttribute('data-browse-pack'));
+    const persona = pack?.personas?.find(p => p.id === tile.getAttribute('data-browse-persona'));
+    if (!persona) return;
+    closeBrowse();
+    addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+  });
+
+  pickerBack.addEventListener('click', () => {
+    if (pickerView.screen === 'personas') {
+      pickerView = { screen: 'packs', packId: null };
+    } else if (pickerView.screen === 'packs' || pickerView.screen === 'add') {
+      pickerView = { screen: 'home', packId: null };
+    } else {
+      closePicker();
+      return;
+    }
+    renderPicker();
+  });
+  pickerClose.addEventListener('click', closePicker);
+  pickerBackdrop.addEventListener('click', closePicker);
+
+  // ── Admin ────────────────────────────────────────────────────
+  function isAdminUnlocked() {
+    return sessionStorage.getItem(STORAGE_ADMIN) === '1';
+  }
+
+  function updateAdminChip() {
+    adminChip.classList.toggle('visible', isAdminUnlocked());
+  }
+
+  function openAdmin(opts = {}) {
+    const firstUnlock = !isAdminUnlocked();
+    sessionStorage.setItem(STORAGE_ADMIN, '1');
+    updateAdminChip();
+    closeBrowse();
+    closePicker();
+    closeAbout();
+    adminView = { screen: 'packs', packId: null, personaId: null };
+    adminEl.classList.add('open');
+    adminEl.setAttribute('aria-hidden', 'false');
+    renderAdmin();
+    if (!opts.silent && firstUnlock) showToast('Admin unlocked');
+  }
+
+  function closeAdmin() {
+    adminEl.classList.remove('open');
+    adminEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function getPack(id) { return packs.find(p => p.id === id); }
+
+  function downloadJson(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportBackup() {
+    downloadJson('chater-backup.json', {
+      version: SCHEMA_VERSION,
+      packs,
+      sessions,
+      activeSessionId
+    });
+    showToast('Backup exported');
+  }
+
+  function importBackupFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || !Array.isArray(data.packs) || !Array.isArray(data.sessions)) {
+          throw new Error('bad');
+        }
+        if (!confirm('Replace all packs and chats with this backup?')) return;
+        packs = data.packs;
+        sessions = data.sessions;
+        activeSessionId = data.activeSessionId || (sessions[0] && sessions[0].id) || null;
+        saveState();
+        renderContacts();
+        if (activeSessionId && sessions.find(s => s.id === activeSessionId)) {
+          selectSession(activeSessionId);
+        } else if (sessions[0]) {
+          selectSession(sessions[0].id);
+        } else {
+          botNameEl.textContent = 'EBT';
+          chatWindow.innerHTML = '';
+          setView('sidebar');
+        }
+        adminView = { screen: 'packs', packId: null, personaId: null };
+        renderAdmin();
+        showToast('Backup restored');
+      } catch {
+        showToast('Invalid backup file.', true);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function personaExportShape(persona) {
+    return {
+      name: persona.name,
+      avatar: persona.avatar,
+      accentColor: persona.accentColor,
+      accentLight: persona.accentLight,
+      accentBg: persona.accentBg,
+      accentBorder: persona.accentBorder,
+      greeting: persona.greeting,
+      responses: persona.responses.slice()
+    };
+  }
+
+  function renderAdmin() {
+    adminBack.classList.toggle('visible', adminView.screen !== 'packs');
+    if (adminView.screen === 'packs') {
+      adminTitle.textContent = 'Packs';
+      renderPacksAdmin();
+    } else if (adminView.screen === 'pack') {
+      const pack = getPack(adminView.packId);
+      adminTitle.textContent = pack ? pack.name : 'Pack';
+      renderPackDetailAdmin(pack);
+    } else if (adminView.screen === 'persona') {
+      adminTitle.textContent = adminView.personaId ? 'Edit persona' : 'New persona';
+      renderPersonaEditor();
+    }
+  }
+
+  function renderPacksAdmin() {
+    let html = '<div class="admin-toolbar">' +
+      '<button class="admin-btn primary" data-act="new-pack">+ New pack</button>' +
+      '<button class="admin-btn" data-act="import-pack">Import pack JSON</button>' +
+      '<button class="admin-btn" data-act="export-backup">Export backup</button>' +
+      '<button class="admin-btn" data-act="import-backup">Import backup</button>' +
+      '</div>';
+    packs.forEach(pack => {
+      html += '<div class="admin-row" data-pack="' + pack.id + '">' +
+        '<div class="meta">' +
+          '<div class="title">' + escapeHtml(pack.name) + (pack.builtin ? ' · built-in' : '') + '</div>' +
+          '<div class="sub">' + (pack.personas?.length || 0) + ' personas</div>' +
+        '</div>' +
+        '<div class="admin-actions">' +
+          '<button class="admin-btn" data-act="open-pack" data-id="' + pack.id + '">Open</button>' +
+          '<button class="admin-btn" data-act="export-pack" data-id="' + pack.id + '">Export</button>' +
+          (!pack.builtin ? '<button class="admin-btn danger" data-act="delete-pack" data-id="' + pack.id + '">Delete</button>' : '') +
+        '</div></div>';
+    });
+    adminBody.innerHTML = html;
+  }
+
+  function renderPackDetailAdmin(pack) {
+    if (!pack) {
+      adminBody.innerHTML = '<p class="admin-hint">Pack not found.</p>';
+      return;
+    }
+    let html = '<div class="admin-toolbar">' +
+      '<button class="admin-btn primary" data-act="new-persona">+ New persona</button>' +
+      '<button class="admin-btn" data-act="import-persona">Import persona JSON</button>' +
+      '<button class="admin-btn" data-act="rename-pack">Rename pack</button>' +
+      '</div>';
+    (pack.personas || []).forEach(persona => {
+      html += '<div class="admin-row">' +
+        '<div class="meta">' +
+          '<div class="title">' + escapeHtml(persona.avatar || '') + ' ' + escapeHtml(persona.name || '') + '</div>' +
+          '<div class="sub">' + (persona.responses?.length || 0) + ' responses</div>' +
+        '</div>' +
+        '<div class="admin-actions">' +
+          '<button class="admin-btn primary" data-act="add-chat" data-id="' + persona.id + '">Add to chats</button>' +
+          '<button class="admin-btn" data-act="edit-persona" data-id="' + persona.id + '">Edit</button>' +
+          '<button class="admin-btn" data-act="export-persona" data-id="' + persona.id + '">Export</button>' +
+          '<button class="admin-btn danger" data-act="delete-persona" data-id="' + persona.id + '">Delete</button>' +
+        '</div></div>';
+    });
+    if (!pack.personas?.length) {
+      html += '<p class="admin-hint">No personas in this pack yet.</p>';
+    }
+    adminBody.innerHTML = html;
+  }
+
+  function renderPersonaEditor() {
+    const pack = getPack(adminView.packId);
+    const existing = pack?.personas?.find(p => p.id === adminView.personaId);
+    const p = existing ? clonePersonality(existing) : clonePersonality({
+      name: 'New persona',
+      avatar: '💬',
+      greeting: 'Hey.',
+      responses: ['Okay.', 'Sure.', 'Hmm.']
+    });
+    adminBody.innerHTML =
+      '<form class="admin-form" id="persona-form">' +
+        '<label>Name</label><input name="name" value="' + escapeHtml(p.name) + '" required />' +
+        '<label>Avatar (emoji or short text)</label><input name="avatar" value="' + escapeHtml(p.avatar) + '" />' +
+        '<label>Greeting</label><input name="greeting" value="' + escapeHtml(p.greeting) + '" />' +
+        '<label>Colors</label><div class="color-row">' +
+          '<input name="accentColor" type="color" value="' + escapeHtml(p.accentColor || '#7e22ce') + '" title="Accent" />' +
+          '<input name="accentLight" type="color" value="' + escapeHtml(p.accentLight || '#a855f7') + '" title="Accent light" />' +
+          '<input name="accentBg" type="color" value="' + escapeHtml(p.accentBg || '#18101f') + '" title="Bubble bg" />' +
+          '<input name="accentBorder" type="color" value="' + escapeHtml(p.accentBorder || '#2d1b45') + '" title="Bubble border" />' +
+        '</div>' +
+        '<label>Responses (one per line)</label>' +
+        '<textarea name="responses">' + escapeHtml((p.responses || []).join('\n')) + '</textarea>' +
+        '<p class="admin-hint">Each line is a possible reply the bot can pick.</p>' +
+        '<div class="admin-toolbar" style="margin-top:16px">' +
+          '<button class="admin-btn primary" type="submit">Save persona</button>' +
+          '<button class="admin-btn" type="button" data-act="cancel-persona">Cancel</button>' +
+        '</div>' +
+      '</form>';
+
+    const form = document.getElementById('persona-form');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const responses = String(fd.get('responses') || '')
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+      if (!responses.length) {
+        showToast('Add at least one response line.', true);
+        return;
+      }
+      const persona = {
+        id: existing?.id || uid(),
+        name: String(fd.get('name') || 'Persona').trim() || 'Persona',
+        avatar: String(fd.get('avatar') || '💬'),
+        greeting: String(fd.get('greeting') || 'Hey.'),
+        accentColor: String(fd.get('accentColor') || DEFAULT_PERSONALITY.accentColor),
+        accentLight: String(fd.get('accentLight') || DEFAULT_PERSONALITY.accentLight),
+        accentBg: String(fd.get('accentBg') || DEFAULT_PERSONALITY.accentBg),
+        accentBorder: String(fd.get('accentBorder') || DEFAULT_PERSONALITY.accentBorder),
+        responses
+      };
+      if (!pack.personas) pack.personas = [];
+      if (existing) {
+        const i = pack.personas.findIndex(x => x.id === existing.id);
+        pack.personas[i] = persona;
+      } else {
+        pack.personas.push(persona);
+      }
+      saveState();
+      adminView = { screen: 'pack', packId: pack.id, personaId: null };
+      renderAdmin();
+      showToast('Saved ' + persona.name);
+    });
+  }
+
+  adminBody.addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    const id = btn.getAttribute('data-id');
+
+    if (act === 'new-pack') {
+      const name = prompt('Pack name', 'The Office');
+      if (!name || !name.trim()) return;
+      const pack = { id: uid(), name: name.trim(), builtin: false, personas: [] };
+      packs.push(pack);
+      saveState();
+      adminView = { screen: 'pack', packId: pack.id, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'export-backup') {
+      exportBackup();
+      return;
+    }
+    if (act === 'import-backup') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = () => importBackupFile(input.files[0]);
+      input.click();
+      return;
+    }
+    if (act === 'open-pack') {
+      adminView = { screen: 'pack', packId: id, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'delete-pack') {
+      const pack = getPack(id);
+      if (!pack || pack.builtin) return;
+      if (!confirm('Delete pack “' + pack.name + '”?')) return;
+      packs = packs.filter(p => p.id !== id);
+      saveState();
+      renderAdmin();
+      return;
+    }
+    if (act === 'export-pack') {
+      const pack = getPack(id);
+      if (!pack) return;
+      downloadJson((pack.name || 'pack').replace(/\s+/g, '-').toLowerCase() + '-pack.json', {
+        name: pack.name,
+        personas: (pack.personas || []).map(personaExportShape)
+      });
+      return;
+    }
+    if (act === 'import-pack') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            const personasIn = Array.isArray(data.personas) ? data.personas : (data.name && data.responses ? [data] : null);
+            if (!personasIn) throw new Error('bad');
+            const pack = {
+              id: uid(),
+              name: data.name || file.name.replace(/\.json$/i, '') || 'Imported pack',
+              builtin: false,
+              personas: personasIn.map(p => ({ id: uid(), ...clonePersonality(p) }))
+            };
+            packs.push(pack);
+            saveState();
+            renderAdmin();
+            showToast('Imported pack: ' + pack.name);
+          } catch {
+            showToast('Invalid pack JSON.', true);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+      return;
+    }
+    if (act === 'rename-pack') {
+      const pack = getPack(adminView.packId);
+      if (!pack) return;
+      const name = prompt('Rename pack', pack.name);
+      if (!name || !name.trim()) return;
+      pack.name = name.trim();
+      saveState();
+      renderAdmin();
+      return;
+    }
+    if (act === 'new-persona') {
+      adminView = { screen: 'persona', packId: adminView.packId, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'edit-persona') {
+      adminView = { screen: 'persona', packId: adminView.packId, personaId: id };
+      renderAdmin();
+      return;
+    }
+    if (act === 'cancel-persona') {
+      adminView = { screen: 'pack', packId: adminView.packId, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'delete-persona') {
+      const pack = getPack(adminView.packId);
+      if (!pack) return;
+      const persona = pack.personas.find(p => p.id === id);
+      if (!persona) return;
+      if (!confirm('Delete persona “' + persona.name + '”?')) return;
+      pack.personas = pack.personas.filter(p => p.id !== id);
+      saveState();
+      renderAdmin();
+      return;
+    }
+    if (act === 'export-persona') {
+      const pack = getPack(adminView.packId);
+      const persona = pack?.personas?.find(p => p.id === id);
+      if (!persona) return;
+      downloadJson((persona.name || 'persona').replace(/\s+/g, '-').toLowerCase() + '.json', personaExportShape(persona));
+      return;
+    }
+    if (act === 'import-persona') {
+      const pack = getPack(adminView.packId);
+      if (!pack) return;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (!Array.isArray(data.responses) || !data.responses.length) throw new Error('bad');
+            pack.personas.push({ id: uid(), ...clonePersonality(data) });
+            saveState();
+            renderAdmin();
+            showToast('Imported ' + (data.name || 'persona'));
+          } catch {
+            showToast('Invalid persona JSON.', true);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+      return;
+    }
+    if (act === 'add-chat') {
+      const pack = getPack(adminView.packId);
+      const persona = pack?.personas?.find(p => p.id === id);
+      if (!persona) return;
+      closeAdmin();
+      addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+      return;
+    }
+  });
+
+  adminBack.addEventListener('click', () => {
+    if (adminView.screen === 'persona') {
+      adminView = { screen: 'pack', packId: adminView.packId, personaId: null };
+    } else {
+      adminView = { screen: 'packs', packId: null, personaId: null };
+    }
+    renderAdmin();
+  });
+  adminClose.addEventListener('click', closeAdmin);
+
+  // ── events ───────────────────────────────────────────────────
+  startNewChat.addEventListener('click', openPicker);
+  browsePacksBtn.addEventListener('click', openBrowse);
+  browseBack.addEventListener('click', closeBrowse);
+  threadsEmptyCta.addEventListener('click', openBrowse);
+  resetBtn.addEventListener('click', resetActiveSession);
+  adminChip.addEventListener('click', () => openAdmin({ silent: true }));
+  aboutBtn.addEventListener('click', openAbout);
+  aboutClose.addEventListener('click', closeAbout);
+  aboutBackdrop.addEventListener('click', closeAbout);
+  threadsScrim.addEventListener('click', () => { closeBrowse(); setView('chat'); });
+  sendBtn.addEventListener('click', handleSend);
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  });
+  userInput.addEventListener('input', () => {
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 110) + 'px';
+  });
+
+  attachLogoGestures(chatLogo, { onTap: () => setView('sidebar') });
+  // Sidebar title: normal tap stays on threads; 10 taps / 10s hold still opens admin.
+  attachLogoGestures(sidebarLogo, { onTap: () => {} });
+
+  // Swipe left on threads chrome (not rows) to dismiss back to chat
+  (function bindSidebarSwipeDismiss() {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let active = false;
+
+    sidebarEl.addEventListener('pointerdown', e => {
+      if (window.innerWidth > 640) return;
+      if (!appEl.classList.contains('show-sidebar')) return;
+      if (e.target.closest('.contact-item, .contact-delete, button, a, input, textarea, #sidebar-logo, .browse-tile')) return;
+      if (e.button != null && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      tracking = true;
+      active = false;
+    });
+
+    sidebarEl.addEventListener('pointermove', e => {
+      if (!tracking) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!active) {
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+        if (Math.abs(dx) <= Math.abs(dy) || dx > 0) {
+          tracking = false;
+          return;
+        }
+        active = true;
+      }
+      const tx = Math.max(-120, Math.min(0, dx));
+      sidebarEl.style.transition = 'none';
+      sidebarEl.style.transform = 'translate3d(' + tx + 'px, 0, 0)';
+    });
+
+    function endSwipe(e) {
+      if (!tracking) return;
+      tracking = false;
+      sidebarEl.style.transition = '';
+      if (active) {
+        const dx = e.clientX - startX;
+        sidebarEl.style.transform = '';
+        if (dx < -64) setView('chat');
+      }
+      active = false;
+    }
+
+    sidebarEl.addEventListener('pointerup', endSwipe);
+    sidebarEl.addEventListener('pointercancel', () => {
+      tracking = false;
+      active = false;
+      sidebarEl.style.transition = '';
+      sidebarEl.style.transform = '';
+    });
+  })();
+
+  // ── init ─────────────────────────────────────────────────────
+  (function init() {
+    loadState();
+    updateAdminChip();
+    updateHeaderChrome();
+    if (!sessions.length) {
+      sessions.push({
+        id: 'ebt',
+        personality: clonePersonality(DEFAULT_PERSONALITY),
+        messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting, ts: Date.now() }]
+      });
+      activeSessionId = 'ebt';
+      saveState();
+    }
+    renderContacts();
+    if (activeSessionId && sessions.find(s => s.id === activeSessionId)) {
+      selectSession(activeSessionId);
+    } else if (sessions[0]) {
+      selectSession(sessions[0].id);
+    } else {
+      setView('sidebar');
+    }
+  })();
+</script>
+</body>
+</html>
