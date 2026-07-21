@@ -84,6 +84,125 @@
       transform: scale(0.92);
     }
 
+    #browse-packs {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 50%;
+      color: var(--accent-light);
+      font-size: 0.95rem;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+      -webkit-user-select: none; user-select: none;
+    }
+    #browse-packs:active {
+      color: #fff;
+      border-color: var(--accent-light);
+      transform: scale(0.92);
+    }
+
+    #threads-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #sidebar.browsing #threads-pane { display: none; }
+
+    #browse-pane {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #sidebar.browsing #browse-pane { display: flex; }
+
+    #browse-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    #browse-toolbar h2 {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    #browse-back {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 0.78rem;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    #browse-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 12px 24px;
+    }
+    .browse-section { margin-top: 10px; }
+    .browse-pack-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #777;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 4px 4px 10px;
+    }
+    .browse-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .browse-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 14px 6px 12px;
+      border-radius: 14px;
+      background: #141414;
+      border: 1px solid #1e1e1e;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+    .browse-tile:active { background: #1a1a1a; border-color: #333; }
+    .browse-tile-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.35rem;
+    }
+    .browse-tile-name {
+      font-size: 0.72rem;
+      color: #ddd;
+      text-align: center;
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .browse-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: #555;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
     #contacts-list { flex: 1; overflow-y: auto; overflow-x: hidden; }
     #contacts-list::-webkit-scrollbar { display: none; }
 
@@ -209,6 +328,17 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    #chat-header .tagline.hidden { display: none; }
+
+    #about-btn {
+      display: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 10px;
+      min-width: 34px;
+      justify-content: center;
+    }
+    #about-btn.visible { display: inline-flex; }
 
     .header-btn {
       background: var(--accent-bg);
@@ -724,6 +854,61 @@
       cursor: pointer;
     }
     #threads-empty-cta:active { background: #a855f7; }
+
+    /* ─── ABOUT SHEET ───────────────────────────────────────── */
+    #about {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 190;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #about.open { display: flex; }
+    #about-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    #about-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      background: #121212;
+      border: 1px solid #222;
+      border-bottom: none;
+      border-radius: 18px 18px 0 0;
+      padding: 18px 18px calc(env(safe-area-inset-bottom, 0px) + 20px);
+    }
+    #about-sheet h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    #about-sheet h2 span { color: var(--accent-light); }
+    #about-sheet .about-tag {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }
+    #about-sheet .about-copy {
+      color: #aaa;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    #about-close {
+      width: 100%;
+      background: #7e22ce;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 650;
+      padding: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -732,13 +917,23 @@
   <aside id="sidebar">
     <div id="sidebar-header">
       <h1 id="sidebar-logo">Chats</h1>
+      <button id="browse-packs" type="button" title="Browse packs" aria-label="Browse packs">&#9638;</button>
       <button id="start-new-chat" type="button" title="Start New Chat" aria-label="Start New Chat">+</button>
     </div>
-    <div id="threads-empty">
-      <p>No chats yet.</p>
-      <button id="threads-empty-cta" type="button">Start a chat</button>
+    <div id="threads-pane">
+      <div id="threads-empty">
+        <p>No chats yet.</p>
+        <button id="threads-empty-cta" type="button">Browse packs</button>
+      </div>
+      <div id="contacts-list"></div>
     </div>
-    <div id="contacts-list"></div>
+    <div id="browse-pane">
+      <div id="browse-toolbar">
+        <button id="browse-back" type="button">Back</button>
+        <h2>Browse</h2>
+      </div>
+      <div id="browse-body"></div>
+    </div>
   </aside>
 
   <div id="threads-scrim" aria-hidden="true"></div>
@@ -747,8 +942,9 @@
     <header id="chat-header">
       <div class="header-text" id="chat-logo" title="Tap for chats">
         <h1>Chat<span id="bot-name">EBT</span></h1>
-        <p class="tagline">powered by pure unfiltered energy &#9889;</p>
+        <p class="tagline" id="tagline">powered by pure unfiltered energy &#9889;</p>
       </div>
+      <button id="about-btn" class="header-btn" type="button" title="About" aria-label="About">i</button>
       <button id="admin-chip" class="header-btn" type="button" title="Admin">Admin</button>
       <button id="reset-btn" class="header-btn" aria-label="Reset chat" title="Clear this chat">&#x21BA;</button>
     </header>
@@ -781,6 +977,16 @@
       <button id="picker-close" type="button" aria-label="Close">Close</button>
     </div>
     <div id="picker-body"></div>
+  </div>
+</div>
+
+<div id="about" aria-hidden="true">
+  <div id="about-backdrop"></div>
+  <div id="about-sheet" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <h2 id="about-title">Chat<span>EBT</span></h2>
+    <p class="about-tag">powered by pure unfiltered energy &#9889;</p>
+    <p class="about-copy">A persona chat app for packs of characters — load a cast, start threads, and keep the chaos in the replies.</p>
+    <button id="about-close" type="button">Close</button>
   </div>
 </div>
 
@@ -933,6 +1139,7 @@
   const STORAGE_ACTIVE = 'chater.activeSessionId';
   const STORAGE_ADMIN = 'chater.adminUnlocked';
   const STORAGE_VERSION = 'chater.schemaVersion';
+  const STORAGE_SEEN_TAGLINE = 'chater.seenTagline';
   const SCHEMA_VERSION = 1;
 
   let sessions = [];
@@ -974,10 +1181,18 @@
   const sendBtn       = document.getElementById('send-btn');
   const resetBtn      = document.getElementById('reset-btn');
   const startNewChat  = document.getElementById('start-new-chat');
+  const browsePacksBtn = document.getElementById('browse-packs');
+  const browseBack    = document.getElementById('browse-back');
+  const browseBody    = document.getElementById('browse-body');
   const threadsEmptyCta = document.getElementById('threads-empty-cta');
   const botNameEl     = document.getElementById('bot-name');
   const chatLogo      = document.getElementById('chat-logo');
   const sidebarLogo   = document.getElementById('sidebar-logo');
+  const taglineEl     = document.getElementById('tagline');
+  const aboutBtn      = document.getElementById('about-btn');
+  const aboutEl       = document.getElementById('about');
+  const aboutClose    = document.getElementById('about-close');
+  const aboutBackdrop = document.getElementById('about-backdrop');
   const toast         = document.getElementById('toast');
   const adminEl       = document.getElementById('admin');
   const adminBody     = document.getElementById('admin-body');
@@ -1001,6 +1216,35 @@
     const pane = view === 'sidebar' ? 'show-sidebar' : 'show-chat';
     const noSession = !activeSessionId || !sessions.find(s => s.id === activeSessionId);
     appEl.className = [solo ? 'solo' : 'multi', pane, noSession ? 'no-session' : ''].filter(Boolean).join(' ');
+    if (view === 'sidebar') dismissTagline();
+  }
+
+  function hasSeenTagline() {
+    return localStorage.getItem(STORAGE_SEEN_TAGLINE) === '1';
+  }
+
+  function updateHeaderChrome() {
+    const seen = hasSeenTagline();
+    taglineEl.classList.toggle('hidden', seen);
+    aboutBtn.classList.toggle('visible', seen);
+  }
+
+  function dismissTagline() {
+    if (!hasSeenTagline()) {
+      localStorage.setItem(STORAGE_SEEN_TAGLINE, '1');
+    }
+    updateHeaderChrome();
+  }
+
+  function openAbout() {
+    dismissTagline();
+    aboutEl.classList.add('open');
+    aboutEl.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeAbout() {
+    aboutEl.classList.remove('open');
+    aboutEl.setAttribute('aria-hidden', 'true');
   }
 
   function saveState() {
@@ -1372,6 +1616,7 @@
   function selectSession(id) {
     const session = sessions.find(s => s.id === id);
     if (!session) return;
+    closeBrowse();
     activeSessionId = id;
 
     const p    = session.personality;
@@ -1524,6 +1769,7 @@
   }
 
   function openPicker() {
+    closeBrowse();
     setView('sidebar');
     const withPersonas = packsForPicker().filter(p => (p.personas || []).length > 0);
     if (withPersonas.length === 1) {
@@ -1539,6 +1785,50 @@
   function closePicker() {
     pickerEl.classList.remove('open');
     pickerEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function openBrowse() {
+    closePicker();
+    closeAbout();
+    setView('sidebar');
+    sidebarEl.classList.add('browsing');
+    renderBrowse();
+  }
+
+  function closeBrowse() {
+    sidebarEl.classList.remove('browsing');
+  }
+
+  function renderBrowse() {
+    const list = packsForPicker();
+    if (!list.length) {
+      browseBody.innerHTML = '<div class="browse-empty">No packs yet. Unlock admin to create one.</div>';
+      return;
+    }
+    let html = '';
+    list.forEach(pack => {
+      const personas = pack.personas || [];
+      html += '<section class="browse-section">' +
+        '<div class="browse-pack-title">' + escapeHtml(pack.name) +
+          (pack.builtin ? ' · built-in' : '') + '</div>';
+      if (!personas.length) {
+        html += '<div class="browse-empty">No personas in this pack.</div>';
+      } else {
+        html += '<div class="browse-grid">';
+        personas.forEach(persona => {
+          html += '<button type="button" class="browse-tile" data-browse-pack="' + pack.id +
+            '" data-browse-persona="' + persona.id + '">' +
+            '<div class="browse-tile-avatar" style="background:' + escapeHtml(persona.accentColor || '#7e22ce') + '">' +
+              escapeHtml(persona.avatar || '💬') +
+            '</div>' +
+            '<div class="browse-tile-name">' + escapeHtml(persona.name || 'Persona') + '</div>' +
+          '</button>';
+        });
+        html += '</div>';
+      }
+      html += '</section>';
+    });
+    browseBody.innerHTML = html;
   }
 
   function renderPicker() {
@@ -1607,6 +1897,16 @@
     }
   });
 
+  browseBody.addEventListener('click', e => {
+    const tile = e.target.closest('[data-browse-persona]');
+    if (!tile) return;
+    const pack = getPack(tile.getAttribute('data-browse-pack'));
+    const persona = pack?.personas?.find(p => p.id === tile.getAttribute('data-browse-persona'));
+    if (!persona) return;
+    closeBrowse();
+    addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+  });
+
   pickerBack.addEventListener('click', () => {
     pickerView = { screen: 'packs', packId: null };
     renderPicker();
@@ -1627,6 +1927,9 @@
     const firstUnlock = !isAdminUnlocked();
     sessionStorage.setItem(STORAGE_ADMIN, '1');
     updateAdminChip();
+    closeBrowse();
+    closePicker();
+    closeAbout();
     adminView = { screen: 'packs', packId: null, personaId: null };
     adminEl.classList.add('open');
     adminEl.setAttribute('aria-hidden', 'false');
@@ -2015,10 +2318,15 @@
 
   // ── events ───────────────────────────────────────────────────
   startNewChat.addEventListener('click', openPicker);
-  threadsEmptyCta.addEventListener('click', openPicker);
+  browsePacksBtn.addEventListener('click', openBrowse);
+  browseBack.addEventListener('click', closeBrowse);
+  threadsEmptyCta.addEventListener('click', openBrowse);
   resetBtn.addEventListener('click', resetActiveSession);
   adminChip.addEventListener('click', () => openAdmin({ silent: true }));
-  threadsScrim.addEventListener('click', () => setView('chat'));
+  aboutBtn.addEventListener('click', openAbout);
+  aboutClose.addEventListener('click', closeAbout);
+  aboutBackdrop.addEventListener('click', closeAbout);
+  threadsScrim.addEventListener('click', () => { closeBrowse(); setView('chat'); });
   sendBtn.addEventListener('click', handleSend);
   userInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -2042,7 +2350,7 @@
     sidebarEl.addEventListener('pointerdown', e => {
       if (window.innerWidth > 640) return;
       if (!appEl.classList.contains('show-sidebar')) return;
-      if (e.target.closest('.contact-item, .contact-delete, button, a, input, textarea, #sidebar-logo')) return;
+      if (e.target.closest('.contact-item, .contact-delete, button, a, input, textarea, #sidebar-logo, .browse-tile')) return;
       if (e.button != null && e.button !== 0) return;
       startX = e.clientX;
       startY = e.clientY;
@@ -2092,6 +2400,7 @@
   (function init() {
     loadState();
     updateAdminChip();
+    updateHeaderChrome();
     if (!sessions.length) {
       sessions.push({
         id: 'ebt',
