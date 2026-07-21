@@ -61,8 +61,7 @@
     }
     #sidebar-header h1 span { color: #a855f7; }
 
-    #add-btn,
-    #chat-add-btn {
+    #add-btn {
       background: #7e22ce;
       border: none;
       border-radius: 50%;
@@ -76,11 +75,7 @@
       line-height: 1;
       -webkit-user-select: none; user-select: none;
     }
-    #add-btn:active,
-    #chat-add-btn:active { background: #a855f7; transform: scale(0.92); }
-
-    /* Chat-header + is only for single-persona mode */
-    #chat-add-btn { display: none; font-size: 1.25rem; width: 34px; height: 34px; }
+    #add-btn:active { background: #a855f7; transform: scale(0.92); }
 
     #contacts-list { flex: 1; overflow-y: auto; }
     #contacts-list::-webkit-scrollbar { display: none; }
@@ -132,13 +127,13 @@
 
     #chat-header {
       width: 100%;
-      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
-      border-bottom: 1px solid #1a1a1a;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1e1e1e;
       background: #0d0d0d;
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     #back-btn {
@@ -148,43 +143,50 @@
       color: var(--accent-light);
       font-size: 1.5rem;
       cursor: pointer;
-      padding: 2px 10px 2px 0;
+      padding: 2px 6px 2px 0;
       line-height: 1;
       -webkit-user-select: none; user-select: none;
-    }
-
-    #chat-header-avatar {
-      width: 38px; height: 38px;
-      border-radius: 50%;
-      background: var(--accent);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.15rem;
       flex-shrink: 0;
-      transition: background 0.3s;
     }
 
     .header-text { flex: 1; min-width: 0; }
-    #active-name {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #fff;
-      display: block;
-      line-height: 1.2;
-    }
-    #active-subtitle { font-size: 0.7rem; color: #555; }
 
-    #reset-btn {
-      background: #111;
-      border: 1px solid #222;
+    #chat-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+      line-height: 1.15;
+    }
+    #chat-header h1 span { color: var(--accent-light); }
+
+    #chat-header .tagline {
+      font-size: 0.73rem;
+      color: #555;
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-btn {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
       border-radius: 10px;
-      color: #666;
-      font-size: 1rem;
-      padding: 6px 9px;
+      color: #aaa;
+      font-size: 0.72rem;
+      padding: 7px 10px;
       cursor: pointer;
+      white-space: nowrap;
       flex-shrink: 0;
       transition: border-color 0.2s, color 0.2s;
-      -webkit-user-select: none; user-select: none;
+      -webkit-user-select: none;
+      user-select: none;
+      line-height: 1;
     }
+    .header-btn:active { color: #fff; border-color: var(--accent-light); }
+
+    #reset-btn { font-size: 1rem; padding: 6px 9px; color: #666; }
     #reset-btn:active { color: #fff; border-color: #555; }
 
     /* ─── EMPTY STATE ───────────────────────────────────────── */
@@ -335,7 +337,6 @@
     #app.single-chat #sidebar { display: none !important; }
     #app.single-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
     #app.single-chat #back-btn { display: none !important; }
-    #app.single-chat #chat-add-btn { display: flex; }
 
     /* ─── MOBILE ────────────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -363,14 +364,13 @@
 
   <main id="chat-area">
     <header id="chat-header">
-      <button id="back-btn">&#8592;</button>
-      <div id="chat-header-avatar"></div>
+      <button id="back-btn" aria-label="Back to threads">&#8592;</button>
       <div class="header-text">
-        <span id="active-name"></span>
-        <span id="active-subtitle">active now</span>
+        <h1>Chat<span id="bot-name">EBT</span></h1>
+        <p class="tagline">powered by pure unfiltered energy &#9889;</p>
       </div>
-      <button id="chat-add-btn" title="Load personality JSON">+</button>
-      <button id="reset-btn" title="Clear this chat">&#x21BA;</button>
+      <button id="reset-btn" class="header-btn" aria-label="Reset chat" title="Clear this chat">&#x21BA;</button>
+      <button id="upload-btn" class="header-btn" aria-label="Upload personality">&#128100; Load</button>
     </header>
     <div id="chat-window"></div>
     <div id="input-area">
@@ -538,11 +538,10 @@
   const sendBtn       = document.getElementById('send-btn');
   const resetBtn      = document.getElementById('reset-btn');
   const addBtn        = document.getElementById('add-btn');
-  const chatAddBtn    = document.getElementById('chat-add-btn');
+  const uploadBtn     = document.getElementById('upload-btn');
   const fileInput     = document.getElementById('file-input');
   const backBtn       = document.getElementById('back-btn');
-  const headerAvatar  = document.getElementById('chat-header-avatar');
-  const activeName    = document.getElementById('active-name');
+  const botNameEl     = document.getElementById('bot-name');
   const toast         = document.getElementById('toast');
 
   function hasMultipleThreads() {
@@ -646,9 +645,7 @@
     root.style.setProperty('--accent-bg',     p.accentBg     || DEFAULT_PERSONALITY.accentBg);
     root.style.setProperty('--accent-border', p.accentBorder || DEFAULT_PERSONALITY.accentBorder);
 
-    headerAvatar.textContent = p.avatar;
-    headerAvatar.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
-    activeName.textContent = p.name;
+    botNameEl.textContent = p.name || DEFAULT_PERSONALITY.name;
 
     renderChatMessages(session);
     renderContacts();
@@ -797,7 +794,7 @@
   // ── event listeners ──────────────────────────────────────────
   function openFilePicker() { fileInput.click(); }
   addBtn.addEventListener('click',  openFilePicker);
-  chatAddBtn.addEventListener('click', openFilePicker);
+  uploadBtn.addEventListener('click', openFilePicker);
   fileInput.addEventListener('change', () => loadPersonalityFile(fileInput.files[0]));
   resetBtn.addEventListener('click', resetActiveSession);
   backBtn.addEventListener('click',  () => {
