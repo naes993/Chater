@@ -34,7 +34,7 @@
       overflow: hidden;
     }
 
-    /* ─── SIDEBAR ───────────────────────────────────────────── */
+    /* ─── SIDEBAR / THREADS ─────────────────────────────────── */
     #sidebar {
       width: 300px;
       flex-shrink: 0;
@@ -58,37 +58,76 @@
       font-weight: 800;
       letter-spacing: -0.5px;
       color: #fff;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
     }
     #sidebar-header h1 span { color: #a855f7; }
 
-    #add-btn {
-      background: #7e22ce;
-      border: none;
-      border-radius: 50%;
-      color: #fff;
-      font-size: 1.4rem;
-      width: 36px; height: 36px;
+    #start-new-chat {
+      margin: 12px 16px;
+      width: calc(100% - 32px);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 12px;
+      color: var(--accent-light);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 12px 14px;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.2s, transform 0.1s;
-      line-height: 1;
+      text-align: center;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
       -webkit-user-select: none; user-select: none;
     }
-    #add-btn:active { background: #a855f7; transform: scale(0.92); }
+    #start-new-chat:active {
+      border-color: var(--accent-light);
+      color: #fff;
+      background: #1f1428;
+    }
 
-    #contacts-list { flex: 1; overflow-y: auto; }
+    #contacts-list { flex: 1; overflow-y: auto; overflow-x: hidden; }
     #contacts-list::-webkit-scrollbar { display: none; }
 
+    #threads-empty {
+      display: none;
+      padding: 28px 20px;
+      text-align: center;
+      color: #444;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    #threads-empty.visible { display: block; }
+
+    .contact-row {
+      position: relative;
+      border-bottom: 1px solid #141414;
+      overflow: hidden;
+    }
+
+    .contact-delete {
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 84px;
+      background: #7f1d1d;
+      color: #fecaca;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 0;
+    }
+
     .contact-item {
+      position: relative;
+      z-index: 1;
       display: flex;
       align-items: center;
       gap: 12px;
       padding: 14px 16px;
       cursor: pointer;
-      border-bottom: 1px solid #141414;
-      transition: background 0.15s;
+      background: #0d0d0d;
+      transition: background 0.15s, transform 0.2s ease;
       -webkit-user-select: none; user-select: none;
+      touch-action: pan-y;
     }
     .contact-item:active { background: #181818; }
     .contact-item.active {
@@ -96,6 +135,7 @@
       border-left: 3px solid #a855f7;
       padding-left: 13px;
     }
+    .contact-item.swiped { transform: translateX(-84px); }
 
     .contact-avatar {
       width: 46px; height: 46px;
@@ -136,20 +176,12 @@
       gap: 8px;
     }
 
-    #back-btn {
-      display: none;
-      background: none;
-      border: none;
-      color: var(--accent-light);
-      font-size: 1.5rem;
+    .header-text {
+      flex: 1;
+      min-width: 0;
       cursor: pointer;
-      padding: 2px 6px 2px 0;
-      line-height: 1;
       -webkit-user-select: none; user-select: none;
-      flex-shrink: 0;
     }
-
-    .header-text { flex: 1; min-width: 0; }
 
     #chat-header h1 {
       font-size: 1.5rem;
@@ -189,22 +221,22 @@
     #reset-btn { font-size: 1rem; padding: 6px 9px; color: #666; }
     #reset-btn:active { color: #fff; border-color: #555; }
 
-    /* ─── EMPTY STATE ───────────────────────────────────────── */
-    #empty-state {
+    #chat-empty {
+      display: none;
       flex: 1;
-      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      color: #2a2a2a;
+      gap: 10px;
+      color: #333;
       text-align: center;
       padding: 24px;
+      font-size: 0.9rem;
     }
-    #empty-state .icon { font-size: 3rem; }
-    #empty-state p { font-size: 0.9rem; color: #333; line-height: 1.5; }
+    #app.no-session #chat-empty { display: flex; }
+    #app.no-session #chat-window,
+    #app.no-session #input-area { display: none; }
 
-    /* ─── MESSAGES ──────────────────────────────────────────── */
     #chat-window {
       flex: 1;
       width: 100%;
@@ -265,7 +297,6 @@
       30%          { transform: translateY(-6px); opacity:1; }
     }
 
-    /* ─── INPUT ─────────────────────────────────────────────── */
     #input-area {
       width: 100%;
       padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
@@ -311,7 +342,6 @@
     #send-btn:active   { transform: scale(0.88); }
     #send-btn:disabled { background: #2a2a2a; cursor: default; }
 
-    /* ─── TOAST ─────────────────────────────────────────────── */
     #toast {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
@@ -327,51 +357,161 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s, transform 0.25s;
-      z-index: 100;
+      z-index: 300;
     }
     #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: #7f1d1d; color: #fca5a5; }
 
-    /* ─── SINGLE vs MULTI THREAD LAYOUT ─────────────────────── */
-    /* One persona: hide threads list and live in the chat only */
-    #app.single-chat #sidebar { display: none !important; }
-    #app.single-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
-    #app.single-chat #back-btn { display: none !important; }
+    /* Solo chat hides threads until logo opens them */
+    #app.solo.show-chat #sidebar { display: none !important; }
+    #app.solo.show-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
 
-    /* ─── MOBILE ────────────────────────────────────────────── */
     @media (max-width: 640px) {
       #sidebar { width: 100%; }
-      #app.multi-chat #back-btn { display: flex; align-items: center; }
-
-      #app.multi-chat.show-sidebar #sidebar   { display: flex; }
-      #app.multi-chat.show-sidebar #chat-area { display: none; }
-      #app.multi-chat.show-chat    #sidebar   { display: none; }
-      #app.multi-chat.show-chat    #chat-area { display: flex; }
+      #app.show-sidebar #sidebar   { display: flex; }
+      #app.show-sidebar #chat-area { display: none; }
+      #app.show-chat #sidebar      { display: none; }
+      #app.show-chat #chat-area    { display: flex; }
+      #app.solo.show-sidebar #sidebar { display: flex !important; }
+      #app.solo.show-sidebar #chat-area { display: none !important; }
     }
+
+    /* ─── ADMIN OVERLAY ─────────────────────────────────────── */
+    #admin {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: #0d0d0d;
+      flex-direction: column;
+      height: 100vh;
+      height: var(--app-height);
+    }
+    #admin.open { display: flex; }
+
+    #admin-header {
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #admin-header h2 {
+      flex: 1;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    #admin-back, #admin-close {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 0.78rem;
+      padding: 7px 11px;
+      cursor: pointer;
+    }
+    #admin-back { display: none; }
+    #admin-back.visible { display: inline-flex; }
+
+    #admin-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    }
+
+    .admin-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .admin-row .meta { flex: 1; min-width: 0; }
+    .admin-row .title { font-weight: 650; color: #f0f0f0; }
+    .admin-row .sub { font-size: 0.75rem; color: #666; margin-top: 2px; }
+
+    .admin-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .admin-btn {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 9px;
+      color: #ccc;
+      font-size: 0.72rem;
+      padding: 6px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .admin-btn.primary {
+      background: #7e22ce;
+      border-color: #7e22ce;
+      color: #fff;
+    }
+    .admin-btn.danger {
+      border-color: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .admin-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .admin-form label {
+      display: block;
+      font-size: 0.75rem;
+      color: #777;
+      margin: 12px 0 5px;
+    }
+    .admin-form input,
+    .admin-form textarea {
+      width: 100%;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      color: #f0f0f0;
+      font-size: 0.95rem;
+      padding: 10px 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    .admin-form input:focus,
+    .admin-form textarea:focus { border-color: var(--accent-light); }
+    .admin-form textarea { min-height: 160px; resize: vertical; line-height: 1.4; }
+    .admin-form .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .admin-hint { font-size: 0.72rem; color: #555; margin-top: 6px; }
   </style>
 </head>
 <body>
-<div id="app" class="single-chat show-chat">
+<div id="app" class="solo show-chat">
 
   <aside id="sidebar">
     <div id="sidebar-header">
-      <h1>Chat<span>EBT</span></h1>
-      <button id="add-btn" title="Load personality JSON">+</button>
-      <input type="file" id="file-input" accept=".json" style="display:none" />
+      <h1 id="sidebar-logo">Chat<span>EBT</span></h1>
     </div>
+    <button id="start-new-chat" type="button">+ Start New Chat</button>
+    <input type="file" id="file-input" accept=".json" style="display:none" />
+    <div id="threads-empty">No chats yet. Tap Start New Chat to load a personality.</div>
     <div id="contacts-list"></div>
   </aside>
 
   <main id="chat-area">
     <header id="chat-header">
-      <button id="back-btn" aria-label="Back to threads">&#8592;</button>
-      <div class="header-text">
+      <div class="header-text" id="chat-logo" title="Tap for chats">
         <h1>Chat<span id="bot-name">EBT</span></h1>
         <p class="tagline">powered by pure unfiltered energy &#9889;</p>
       </div>
       <button id="reset-btn" class="header-btn" aria-label="Reset chat" title="Clear this chat">&#x21BA;</button>
-      <button id="upload-btn" class="header-btn" aria-label="Upload personality">&#128100; Load</button>
     </header>
+    <div id="chat-empty">No active chat.<br/>Tap the logo to open threads.</div>
     <div id="chat-window"></div>
     <div id="input-area">
       <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
@@ -380,6 +520,16 @@
   </main>
 
 </div>
+
+<div id="admin" aria-hidden="true">
+  <div id="admin-header">
+    <button id="admin-back" type="button">Back</button>
+    <h2 id="admin-title">Admin</h2>
+    <button id="admin-close" type="button">Close</button>
+  </div>
+  <div id="admin-body"></div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -523,38 +673,93 @@
     ]
   };
 
-  // sessions: [{ id, personality, messages: [{role, text}] }]
+
+  const STORAGE_PACKS = 'chater.packs';
+  const STORAGE_SESSIONS = 'chater.sessions';
+  const STORAGE_ACTIVE = 'chater.activeSessionId';
+  const STORAGE_ADMIN = 'chater.adminUnlocked';
+
   let sessions = [];
+  let packs = [];
   let activeSessionId = null;
   let isBotTyping = false;
+  let adminView = { screen: 'packs', packId: null, personaId: null };
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function clonePersonality(p) {
+    return {
+      ...DEFAULT_PERSONALITY,
+      ...p,
+      responses: Array.isArray(p.responses) ? p.responses.slice() : DEFAULT_PERSONALITY.responses.slice()
+    };
+  }
+
+  function seedDefaultPack() {
+    return [{
+      id: 'default',
+      name: 'Default',
+      builtin: true,
+      personas: [{
+        id: 'persona-ebt',
+        ...clonePersonality(DEFAULT_PERSONALITY)
+      }]
+    }];
+  }
 
   // ── DOM refs ────────────────────────────────────────────────
   const appEl         = document.getElementById('app');
   const contactsList  = document.getElementById('contacts-list');
+  const threadsEmpty  = document.getElementById('threads-empty');
   const chatWindow    = document.getElementById('chat-window');
   const userInput     = document.getElementById('user-input');
   const sendBtn       = document.getElementById('send-btn');
   const resetBtn      = document.getElementById('reset-btn');
-  const addBtn        = document.getElementById('add-btn');
-  const uploadBtn     = document.getElementById('upload-btn');
+  const startNewChat  = document.getElementById('start-new-chat');
   const fileInput     = document.getElementById('file-input');
-  const backBtn       = document.getElementById('back-btn');
   const botNameEl     = document.getElementById('bot-name');
+  const chatLogo      = document.getElementById('chat-logo');
+  const sidebarLogo   = document.getElementById('sidebar-logo');
   const toast         = document.getElementById('toast');
+  const adminEl       = document.getElementById('admin');
+  const adminBody     = document.getElementById('admin-body');
+  const adminTitle    = document.getElementById('admin-title');
+  const adminBack     = document.getElementById('admin-back');
+  const adminClose    = document.getElementById('admin-close');
 
-  function hasMultipleThreads() {
-    return sessions.length > 1;
+  function setView(view) {
+    const solo = sessions.length <= 1;
+    const pane = view === 'sidebar' ? 'show-sidebar' : 'show-chat';
+    const noSession = !activeSessionId || !sessions.find(s => s.id === activeSessionId);
+    appEl.className = [solo ? 'solo' : 'multi', pane, noSession ? 'no-session' : ''].filter(Boolean).join(' ');
   }
 
-  // Keep single-chat (no thread list) until a second persona is loaded.
-  function setView(view) {
-    const multi = hasMultipleThreads();
-    const mode  = multi ? 'multi-chat' : 'single-chat';
-    // Single-persona mode always stays on the chat screen.
-    const pane  = multi && view === 'sidebar' ? 'show-sidebar' : 'show-chat';
-    appEl.className = mode + ' ' + pane;
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_SESSIONS, JSON.stringify(sessions));
+      localStorage.setItem(STORAGE_ACTIVE, activeSessionId || '');
+      localStorage.setItem(STORAGE_PACKS, JSON.stringify(packs));
+    } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      const rawPacks = localStorage.getItem(STORAGE_PACKS);
+      packs = rawPacks ? JSON.parse(rawPacks) : seedDefaultPack();
+      if (!Array.isArray(packs) || packs.length === 0) packs = seedDefaultPack();
+
+      const rawSessions = localStorage.getItem(STORAGE_SESSIONS);
+      if (rawSessions) {
+        const parsed = JSON.parse(rawSessions);
+        if (Array.isArray(parsed)) sessions = parsed;
+      }
+      const savedActive = localStorage.getItem(STORAGE_ACTIVE);
+      if (savedActive) activeSessionId = savedActive;
+    } catch (e) {
+      packs = seedDefaultPack();
+      sessions = [];
+      activeSessionId = null;
+    }
   }
 
   // ── viewport height fix ─────────────────────────────────────
@@ -574,7 +779,6 @@
   let audioUnlocked = false;
   function unlockAudio() {
     if (audioUnlocked) return;
-    // iOS/Safari require a play() during a user gesture before later playback works
     replySound.muted = true;
     const p = replySound.play();
     if (p && typeof p.then === 'function') {
@@ -583,9 +787,7 @@
         replySound.currentTime = 0;
         replySound.muted = false;
         audioUnlocked = true;
-      }).catch(() => {
-        replySound.muted = false;
-      });
+      }).catch(() => { replySound.muted = false; });
     } else {
       replySound.pause();
       replySound.currentTime = 0;
@@ -611,32 +813,235 @@
     toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
   }
 
-  // ── contacts list ────────────────────────────────────────────
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── logo gestures: tap = threads, 10 taps / 10s hold = admin ─
+  function attachLogoGestures(el, { onTap }) {
+    let tapCount = 0;
+    let tapTimer = null;
+    let holdTimer = null;
+    let holdFired = false;
+
+    function resetTaps() {
+      tapCount = 0;
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+    }
+
+    function openAdminFromGesture() {
+      resetTaps();
+      openAdmin();
+    }
+
+    el.addEventListener('pointerdown', e => {
+      if (e.button != null && e.button !== 0) return;
+      holdFired = false;
+      holdTimer = setTimeout(() => {
+        holdFired = true;
+        openAdminFromGesture();
+      }, 10000);
+    });
+
+    function clearHold() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }
+
+    el.addEventListener('pointerup', clearHold);
+    el.addEventListener('pointerleave', clearHold);
+    el.addEventListener('pointercancel', clearHold);
+
+    // click handles normal tap + 10-tap unlock (works with mouse, touch, and automation)
+    el.addEventListener('click', e => {
+      if (holdFired) {
+        holdFired = false;
+        e.preventDefault();
+        return;
+      }
+      tapCount += 1;
+      if (tapTimer) clearTimeout(tapTimer);
+      if (tapCount >= 10) {
+        openAdminFromGesture();
+        return;
+      }
+      // Debounce navigation so a 10-tap unlock can finish without leaving the screen.
+      tapTimer = setTimeout(() => {
+        const count = tapCount;
+        resetTaps();
+        if (count > 0 && count < 10) onTap();
+      }, 400);
+    });
+  }
+
+  // ── contacts / threads list ──────────────────────────────────
+  function closeAllSwipes(except) {
+    contactsList.querySelectorAll('.contact-item.swiped').forEach(el => {
+      if (el !== except) el.classList.remove('swiped');
+    });
+  }
+
+  function removeSession(id) {
+    const idx = sessions.findIndex(s => s.id === id);
+    if (idx < 0) return;
+    const wasActive = activeSessionId === id;
+    sessions.splice(idx, 1);
+    if (wasActive) {
+      activeSessionId = sessions[0] ? sessions[0].id : null;
+    }
+    saveState();
+    renderContacts();
+    if (activeSessionId) {
+      selectSession(activeSessionId);
+      setView('sidebar');
+    } else {
+      botNameEl.textContent = 'EBT';
+      chatWindow.innerHTML = '';
+      setView('sidebar');
+    }
+    showToast('Chat removed');
+  }
+
+  function confirmRemoveSession(id) {
+    const session = sessions.find(s => s.id === id);
+    const name = session?.personality?.name || 'this chat';
+    if (confirm('Remove chat with ' + name + '?')) removeSession(id);
+  }
+
+  function bindThreadGestures(row, item, sessionId) {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let swiping = false;
+    let longTimer = null;
+    let longFired = false;
+    let moved = false;
+
+    function clearLong() {
+      if (longTimer) { clearTimeout(longTimer); longTimer = null; }
+    }
+
+    item.addEventListener('pointerdown', e => {
+      if (e.button != null && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      tracking = true;
+      swiping = false;
+      moved = false;
+      longFired = false;
+      clearLong();
+      longTimer = setTimeout(() => {
+        longFired = true;
+        tracking = false;
+        confirmRemoveSession(sessionId);
+      }, 500);
+      try { item.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    item.addEventListener('pointermove', e => {
+      if (!tracking) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        moved = true;
+        clearLong();
+      }
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+        swiping = true;
+        clearLong();
+      }
+      if (swiping) {
+        const tx = Math.max(-84, Math.min(0, dx));
+        item.style.transition = 'none';
+        item.style.transform = 'translateX(' + tx + 'px)';
+      }
+    });
+
+    function endPointer(e) {
+      if (!tracking && !swiping) { clearLong(); return; }
+      tracking = false;
+      clearLong();
+      item.style.transition = '';
+      if (longFired) {
+        item.style.transform = '';
+        item.classList.remove('swiped');
+        return;
+      }
+      if (swiping) {
+        const dx = e.clientX - startX;
+        if (dx < -42) {
+          closeAllSwipes(item);
+          item.classList.add('swiped');
+          item.style.transform = '';
+        } else {
+          item.classList.remove('swiped');
+          item.style.transform = '';
+        }
+        swiping = false;
+        return;
+      }
+      item.style.transform = '';
+      if (!moved) {
+        closeAllSwipes();
+        selectSession(sessionId);
+      }
+    }
+
+    item.addEventListener('pointerup', endPointer);
+    item.addEventListener('pointercancel', () => {
+      tracking = false;
+      swiping = false;
+      clearLong();
+      item.style.transition = '';
+      item.style.transform = '';
+    });
+
+    row.querySelector('.contact-delete').addEventListener('click', ev => {
+      ev.stopPropagation();
+      confirmRemoveSession(sessionId);
+    });
+  }
+
   function renderContacts() {
     contactsList.innerHTML = '';
+    threadsEmpty.classList.toggle('visible', sessions.length === 0);
     sessions.forEach(session => {
       const last    = session.messages[session.messages.length - 1];
       const preview = last ? last.text : 'No messages yet';
       const p       = session.personality;
 
+      const row = document.createElement('div');
+      row.className = 'contact-row';
+
+      const del = document.createElement('button');
+      del.className = 'contact-delete';
+      del.type = 'button';
+      del.textContent = 'Delete';
+
       const item = document.createElement('div');
       item.className = 'contact-item' + (session.id === activeSessionId ? ' active' : '');
       item.innerHTML =
-        `<div class="contact-avatar" style="background:${p.accentColor || '#7e22ce'}">${p.avatar}</div>` +
-        `<div class="contact-info">` +
-          `<div class="contact-name">${p.name}</div>` +
-          `<div class="contact-preview">${preview.slice(0, 50)}</div>` +
-        `</div>`;
-      item.addEventListener('click', () => selectSession(session.id));
-      contactsList.appendChild(item);
+        '<div class="contact-avatar" style="background:' + (p.accentColor || '#7e22ce') + '">' + escapeHtml(p.avatar || '') + '</div>' +
+        '<div class="contact-info">' +
+          '<div class="contact-name">' + escapeHtml(p.name || 'Chat') + '</div>' +
+          '<div class="contact-preview">' + escapeHtml((preview || '').slice(0, 50)) + '</div>' +
+        '</div>';
+
+      row.appendChild(del);
+      row.appendChild(item);
+      bindThreadGestures(row, item, session.id);
+      contactsList.appendChild(row);
     });
   }
 
   // ── select / switch session ──────────────────────────────────
   function selectSession(id) {
-    activeSessionId = id;
     const session = sessions.find(s => s.id === id);
     if (!session) return;
+    activeSessionId = id;
 
     const p    = session.personality;
     const root = document.documentElement;
@@ -649,30 +1054,30 @@
 
     renderChatMessages(session);
     renderContacts();
+    saveState();
     setView('chat');
     userInput.focus();
   }
 
-  // ── render messages ──────────────────────────────────────────
   function renderChatMessages(session) {
     chatWindow.innerHTML = '';
     session.messages.forEach(msg => appendBubble(msg.text, msg.role, session.personality, false));
     scrollBottom();
   }
 
-  // ── append a single bubble ───────────────────────────────────
   function appendBubble(text, role, personality, save = true) {
     if (save) {
       const session = sessions.find(s => s.id === activeSessionId);
       if (session) {
         session.messages.push({ role, text });
         renderContacts();
+        saveState();
       }
     }
 
     const p   = personality || sessions.find(s => s.id === activeSessionId)?.personality || DEFAULT_PERSONALITY;
     const row = document.createElement('div');
-    row.className = `bubble-row ${role}`;
+    row.className = 'bubble-row ' + role;
 
     const av = document.createElement('div');
     av.className = role === 'bot' ? 'av' : 'av user-av';
@@ -680,7 +1085,7 @@
     if (role === 'bot') av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
 
     const bubble = document.createElement('div');
-    bubble.className = `bubble ${role}`;
+    bubble.className = 'bubble ' + role;
     bubble.textContent = text;
 
     row.appendChild(av);
@@ -689,7 +1094,6 @@
     scrollBottom();
   }
 
-  // ── typing indicator ─────────────────────────────────────────
   function addTypingIndicator(p) {
     const row = document.createElement('div');
     row.className = 'bubble-row bot';
@@ -713,7 +1117,6 @@
 
   function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
 
-  // ── send message ─────────────────────────────────────────────
   async function handleSend() {
     if (!activeSessionId || isBotTyping) return;
     const text = userInput.value.trim();
@@ -744,7 +1147,6 @@
     userInput.focus();
   }
 
-  // ── reset active session ─────────────────────────────────────
   function resetActiveSession() {
     const session = sessions.find(s => s.id === activeSessionId);
     if (!session) return;
@@ -756,10 +1158,29 @@
     session.messages.push({ role: 'bot', text: greeting });
     renderChatMessages(session);
     renderContacts();
+    saveState();
     showToast('\u{1F504} Chat cleared');
   }
 
-  // ── upload personality JSON ──────────────────────────────────
+  function addSessionFromPersonality(parsed, toastMsg) {
+    if (!Array.isArray(parsed.responses) || parsed.responses.length === 0) {
+      showToast('Needs a non-empty responses list.', true);
+      return null;
+    }
+    const p = clonePersonality(parsed);
+    const session = {
+      id: uid(),
+      personality: p,
+      messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting }]
+    };
+    sessions.push(session);
+    saveState();
+    renderContacts();
+    selectSession(session.id);
+    showToast(toastMsg || ('Added: ' + p.name));
+    return session;
+  }
+
   function loadPersonalityFile(file) {
     if (!file) return;
     fileInput.value = '';
@@ -767,40 +1188,353 @@
     reader.onload = e => {
       let parsed;
       try { parsed = JSON.parse(e.target.result); }
-      catch { showToast('⚠️ Invalid JSON file.', true); return; }
-      if (!Array.isArray(parsed.responses) || parsed.responses.length === 0) {
-        showToast('⚠️ JSON needs a non-empty “responses” array.', true);
-        return;
-      }
-      const p = { ...DEFAULT_PERSONALITY, ...parsed };
-      const session = {
-        id: uid(),
-        personality: p,
-        messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting }]
-      };
-      sessions.push(session);
-      renderContacts();
-      selectSession(session.id);
-      // After 2+ personas, the thread list becomes available (back / sidebar).
-      if (hasMultipleThreads()) {
-        showToast('✅ Added: ' + p.name + ' · threads unlocked');
-      } else {
-        showToast('✅ Added: ' + p.name);
-      }
+      catch { showToast('Invalid JSON file.', true); return; }
+      addSessionFromPersonality(parsed, 'Started chat: ' + (parsed.name || 'Custom'));
     };
     reader.readAsText(file);
   }
 
-  // ── event listeners ──────────────────────────────────────────
+  // ── Admin ────────────────────────────────────────────────────
+  function isAdminUnlocked() {
+    return sessionStorage.getItem(STORAGE_ADMIN) === '1';
+  }
+
+  function openAdmin() {
+    sessionStorage.setItem(STORAGE_ADMIN, '1');
+    adminView = { screen: 'packs', packId: null, personaId: null };
+    adminEl.classList.add('open');
+    adminEl.setAttribute('aria-hidden', 'false');
+    renderAdmin();
+    showToast('Admin unlocked');
+  }
+
+  function closeAdmin() {
+    adminEl.classList.remove('open');
+    adminEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function getPack(id) { return packs.find(p => p.id === id); }
+
+  function downloadJson(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function personaExportShape(persona) {
+    return {
+      name: persona.name,
+      avatar: persona.avatar,
+      accentColor: persona.accentColor,
+      accentLight: persona.accentLight,
+      accentBg: persona.accentBg,
+      accentBorder: persona.accentBorder,
+      greeting: persona.greeting,
+      responses: persona.responses.slice()
+    };
+  }
+
+  function renderAdmin() {
+    adminBack.classList.toggle('visible', adminView.screen !== 'packs');
+    if (adminView.screen === 'packs') {
+      adminTitle.textContent = 'Packs';
+      renderPacksAdmin();
+    } else if (adminView.screen === 'pack') {
+      const pack = getPack(adminView.packId);
+      adminTitle.textContent = pack ? pack.name : 'Pack';
+      renderPackDetailAdmin(pack);
+    } else if (adminView.screen === 'persona') {
+      adminTitle.textContent = adminView.personaId ? 'Edit persona' : 'New persona';
+      renderPersonaEditor();
+    }
+  }
+
+  function renderPacksAdmin() {
+    let html = '<div class="admin-toolbar">' +
+      '<button class="admin-btn primary" data-act="new-pack">+ New pack</button>' +
+      '<button class="admin-btn" data-act="import-pack">Import pack JSON</button>' +
+      '</div>';
+    packs.forEach(pack => {
+      html += '<div class="admin-row" data-pack="' + pack.id + '">' +
+        '<div class="meta">' +
+          '<div class="title">' + escapeHtml(pack.name) + (pack.builtin ? ' · built-in' : '') + '</div>' +
+          '<div class="sub">' + (pack.personas?.length || 0) + ' personas</div>' +
+        '</div>' +
+        '<div class="admin-actions">' +
+          '<button class="admin-btn" data-act="open-pack" data-id="' + pack.id + '">Open</button>' +
+          '<button class="admin-btn" data-act="export-pack" data-id="' + pack.id + '">Export</button>' +
+          (!pack.builtin ? '<button class="admin-btn danger" data-act="delete-pack" data-id="' + pack.id + '">Delete</button>' : '') +
+        '</div></div>';
+    });
+    adminBody.innerHTML = html;
+  }
+
+  function renderPackDetailAdmin(pack) {
+    if (!pack) {
+      adminBody.innerHTML = '<p class="admin-hint">Pack not found.</p>';
+      return;
+    }
+    let html = '<div class="admin-toolbar">' +
+      '<button class="admin-btn primary" data-act="new-persona">+ New persona</button>' +
+      '<button class="admin-btn" data-act="import-persona">Import persona JSON</button>' +
+      '<button class="admin-btn" data-act="rename-pack">Rename pack</button>' +
+      '</div>';
+    (pack.personas || []).forEach(persona => {
+      html += '<div class="admin-row">' +
+        '<div class="meta">' +
+          '<div class="title">' + escapeHtml(persona.avatar || '') + ' ' + escapeHtml(persona.name || '') + '</div>' +
+          '<div class="sub">' + (persona.responses?.length || 0) + ' responses</div>' +
+        '</div>' +
+        '<div class="admin-actions">' +
+          '<button class="admin-btn primary" data-act="add-chat" data-id="' + persona.id + '">Add to chats</button>' +
+          '<button class="admin-btn" data-act="edit-persona" data-id="' + persona.id + '">Edit</button>' +
+          '<button class="admin-btn" data-act="export-persona" data-id="' + persona.id + '">Export</button>' +
+          '<button class="admin-btn danger" data-act="delete-persona" data-id="' + persona.id + '">Delete</button>' +
+        '</div></div>';
+    });
+    if (!pack.personas?.length) {
+      html += '<p class="admin-hint">No personas in this pack yet.</p>';
+    }
+    adminBody.innerHTML = html;
+  }
+
+  function renderPersonaEditor() {
+    const pack = getPack(adminView.packId);
+    const existing = pack?.personas?.find(p => p.id === adminView.personaId);
+    const p = existing ? clonePersonality(existing) : clonePersonality({
+      name: 'New persona',
+      avatar: '💬',
+      greeting: 'Hey.',
+      responses: ['Okay.', 'Sure.', 'Hmm.']
+    });
+    adminBody.innerHTML =
+      '<form class="admin-form" id="persona-form">' +
+        '<label>Name</label><input name="name" value="' + escapeHtml(p.name) + '" required />' +
+        '<label>Avatar (emoji or short text)</label><input name="avatar" value="' + escapeHtml(p.avatar) + '" />' +
+        '<label>Greeting</label><input name="greeting" value="' + escapeHtml(p.greeting) + '" />' +
+        '<label>Colors</label><div class="color-row">' +
+          '<input name="accentColor" type="color" value="' + escapeHtml(p.accentColor || '#7e22ce') + '" title="Accent" />' +
+          '<input name="accentLight" type="color" value="' + escapeHtml(p.accentLight || '#a855f7') + '" title="Accent light" />' +
+          '<input name="accentBg" type="color" value="' + escapeHtml(p.accentBg || '#18101f') + '" title="Bubble bg" />' +
+          '<input name="accentBorder" type="color" value="' + escapeHtml(p.accentBorder || '#2d1b45') + '" title="Bubble border" />' +
+        '</div>' +
+        '<label>Responses (one per line)</label>' +
+        '<textarea name="responses">' + escapeHtml((p.responses || []).join('\n')) + '</textarea>' +
+        '<p class="admin-hint">Each line is a possible reply the bot can pick.</p>' +
+        '<div class="admin-toolbar" style="margin-top:16px">' +
+          '<button class="admin-btn primary" type="submit">Save persona</button>' +
+          '<button class="admin-btn" type="button" data-act="cancel-persona">Cancel</button>' +
+        '</div>' +
+      '</form>';
+
+    const form = document.getElementById('persona-form');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const responses = String(fd.get('responses') || '')
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+      if (!responses.length) {
+        showToast('Add at least one response line.', true);
+        return;
+      }
+      const persona = {
+        id: existing?.id || uid(),
+        name: String(fd.get('name') || 'Persona').trim() || 'Persona',
+        avatar: String(fd.get('avatar') || '💬'),
+        greeting: String(fd.get('greeting') || 'Hey.'),
+        accentColor: String(fd.get('accentColor') || DEFAULT_PERSONALITY.accentColor),
+        accentLight: String(fd.get('accentLight') || DEFAULT_PERSONALITY.accentLight),
+        accentBg: String(fd.get('accentBg') || DEFAULT_PERSONALITY.accentBg),
+        accentBorder: String(fd.get('accentBorder') || DEFAULT_PERSONALITY.accentBorder),
+        responses
+      };
+      if (!pack.personas) pack.personas = [];
+      if (existing) {
+        const i = pack.personas.findIndex(x => x.id === existing.id);
+        pack.personas[i] = persona;
+      } else {
+        pack.personas.push(persona);
+      }
+      saveState();
+      adminView = { screen: 'pack', packId: pack.id, personaId: null };
+      renderAdmin();
+      showToast('Saved ' + persona.name);
+    });
+  }
+
+  adminBody.addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    const id = btn.getAttribute('data-id');
+
+    if (act === 'new-pack') {
+      const name = prompt('Pack name', 'The Office');
+      if (!name || !name.trim()) return;
+      const pack = { id: uid(), name: name.trim(), builtin: false, personas: [] };
+      packs.push(pack);
+      saveState();
+      adminView = { screen: 'pack', packId: pack.id, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'open-pack') {
+      adminView = { screen: 'pack', packId: id, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'delete-pack') {
+      const pack = getPack(id);
+      if (!pack || pack.builtin) return;
+      if (!confirm('Delete pack “' + pack.name + '”?')) return;
+      packs = packs.filter(p => p.id !== id);
+      saveState();
+      renderAdmin();
+      return;
+    }
+    if (act === 'export-pack') {
+      const pack = getPack(id);
+      if (!pack) return;
+      downloadJson((pack.name || 'pack').replace(/\s+/g, '-').toLowerCase() + '-pack.json', {
+        name: pack.name,
+        personas: (pack.personas || []).map(personaExportShape)
+      });
+      return;
+    }
+    if (act === 'import-pack') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            const personasIn = Array.isArray(data.personas) ? data.personas : (data.name && data.responses ? [data] : null);
+            if (!personasIn) throw new Error('bad');
+            const pack = {
+              id: uid(),
+              name: data.name || file.name.replace(/\.json$/i, '') || 'Imported pack',
+              builtin: false,
+              personas: personasIn.map(p => ({ id: uid(), ...clonePersonality(p) }))
+            };
+            packs.push(pack);
+            saveState();
+            renderAdmin();
+            showToast('Imported pack: ' + pack.name);
+          } catch {
+            showToast('Invalid pack JSON.', true);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+      return;
+    }
+    if (act === 'rename-pack') {
+      const pack = getPack(adminView.packId);
+      if (!pack) return;
+      const name = prompt('Rename pack', pack.name);
+      if (!name || !name.trim()) return;
+      pack.name = name.trim();
+      saveState();
+      renderAdmin();
+      return;
+    }
+    if (act === 'new-persona') {
+      adminView = { screen: 'persona', packId: adminView.packId, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'edit-persona') {
+      adminView = { screen: 'persona', packId: adminView.packId, personaId: id };
+      renderAdmin();
+      return;
+    }
+    if (act === 'cancel-persona') {
+      adminView = { screen: 'pack', packId: adminView.packId, personaId: null };
+      renderAdmin();
+      return;
+    }
+    if (act === 'delete-persona') {
+      const pack = getPack(adminView.packId);
+      if (!pack) return;
+      const persona = pack.personas.find(p => p.id === id);
+      if (!persona) return;
+      if (!confirm('Delete persona “' + persona.name + '”?')) return;
+      pack.personas = pack.personas.filter(p => p.id !== id);
+      saveState();
+      renderAdmin();
+      return;
+    }
+    if (act === 'export-persona') {
+      const pack = getPack(adminView.packId);
+      const persona = pack?.personas?.find(p => p.id === id);
+      if (!persona) return;
+      downloadJson((persona.name || 'persona').replace(/\s+/g, '-').toLowerCase() + '.json', personaExportShape(persona));
+      return;
+    }
+    if (act === 'import-persona') {
+      const pack = getPack(adminView.packId);
+      if (!pack) return;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (!Array.isArray(data.responses) || !data.responses.length) throw new Error('bad');
+            pack.personas.push({ id: uid(), ...clonePersonality(data) });
+            saveState();
+            renderAdmin();
+            showToast('Imported ' + (data.name || 'persona'));
+          } catch {
+            showToast('Invalid persona JSON.', true);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+      return;
+    }
+    if (act === 'add-chat') {
+      const pack = getPack(adminView.packId);
+      const persona = pack?.personas?.find(p => p.id === id);
+      if (!persona) return;
+      closeAdmin();
+      addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+      return;
+    }
+  });
+
+  adminBack.addEventListener('click', () => {
+    if (adminView.screen === 'persona') {
+      adminView = { screen: 'pack', packId: adminView.packId, personaId: null };
+    } else {
+      adminView = { screen: 'packs', packId: null, personaId: null };
+    }
+    renderAdmin();
+  });
+  adminClose.addEventListener('click', closeAdmin);
+
+  // ── events ───────────────────────────────────────────────────
   function openFilePicker() { fileInput.click(); }
-  addBtn.addEventListener('click',  openFilePicker);
-  uploadBtn.addEventListener('click', openFilePicker);
+  startNewChat.addEventListener('click', openFilePicker);
   fileInput.addEventListener('change', () => loadPersonalityFile(fileInput.files[0]));
   resetBtn.addEventListener('click', resetActiveSession);
-  backBtn.addEventListener('click',  () => {
-    if (hasMultipleThreads()) setView('sidebar');
-  });
-  sendBtn.addEventListener('click',  handleSend);
+  sendBtn.addEventListener('click', handleSend);
   userInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   });
@@ -809,17 +1543,30 @@
     userInput.style.height = Math.min(userInput.scrollHeight, 110) + 'px';
   });
 
+  attachLogoGestures(chatLogo, { onTap: () => setView('sidebar') });
+  // Sidebar logo: normal tap stays on threads; 10 taps / 10s hold still opens admin.
+  attachLogoGestures(sidebarLogo, { onTap: () => {} });
+
   // ── init ─────────────────────────────────────────────────────
   (function init() {
-    const ebt = {
-      id: 'ebt',
-      personality: { ...DEFAULT_PERSONALITY },
-      messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting }]
-    };
-    sessions.push(ebt);
+    loadState();
+    if (!sessions.length) {
+      sessions.push({
+        id: 'ebt',
+        personality: clonePersonality(DEFAULT_PERSONALITY),
+        messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting }]
+      });
+      activeSessionId = 'ebt';
+      saveState();
+    }
     renderContacts();
-    // One persona → single-chat only (no thread list). Open EBT immediately.
-    selectSession('ebt');
+    if (activeSessionId && sessions.find(s => s.id === activeSessionId)) {
+      selectSession(activeSessionId);
+    } else if (sessions[0]) {
+      selectSession(sessions[0].id);
+    } else {
+      setView('sidebar');
+    }
   })();
 </script>
 </body>
