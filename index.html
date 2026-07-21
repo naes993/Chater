@@ -510,10 +510,9 @@
     ]
   };
 
-  // sessions: [{ id, personality, messages: [{role, text}] }]
+  // sessions: [{ id, personality, messages: [{role, text}], pending }]
   let sessions = [];
   let activeSessionId = null;
-  let isBotTyping = false;
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
@@ -613,6 +612,7 @@
 
     renderChatMessages(session);
     renderContacts();
+    syncInputState();
 
     appEl.className = 'show-chat';
     userInput.focus();
@@ -621,21 +621,21 @@
   // ── render messages ──────────────────────────────────────────
   function renderChatMessages(session) {
     chatWindow.innerHTML = '';
-    session.messages.forEach(msg => appendBubble(msg.text, msg.role, session.personality, false));
+    session.messages.forEach(msg => renderBubble(msg.text, msg.role, session.personality));
+    if (session.pending) addTypingIndicator(session.personality);
     scrollBottom();
   }
 
-  // ── append a single bubble ───────────────────────────────────
-  function appendBubble(text, role, personality, save = true) {
-    if (save) {
-      const session = sessions.find(s => s.id === activeSessionId);
-      if (session) {
-        session.messages.push({ role, text });
-        renderContacts();
-      }
-    }
+  // ── add a message to a session (model + DOM if it's on screen) ─
+  function addMessage(session, role, text) {
+    session.messages.push({ role, text });
+    if (session.id === activeSessionId) renderBubble(text, role, session.personality);
+    renderContacts();
+  }
 
-    const p   = personality || sessions.find(s => s.id === activeSessionId)?.personality || DEFAULT_PERSONALITY;
+  // ── render one bubble into the chat window (no model change) ──
+  function renderBubble(text, role, personality) {
+    const p   = personality || DEFAULT_PERSONALITY;
     const row = document.createElement('div');
     row.className = `bubble-row ${role}`;
 
@@ -678,35 +678,38 @@
 
   function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
 
+  // Send button is disabled only while the CURRENTLY OPEN session is awaiting
+  // a reply — a different session typing in the background must not lock input.
+  function syncInputState() {
+    const session = sessions.find(s => s.id === activeSessionId);
+    sendBtn.disabled = !session || !!session.pending;
+  }
+
   // ── send message ─────────────────────────────────────────────
   async function handleSend() {
-    if (!activeSessionId || isBotTyping) return;
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session || session.pending) return;
     const text = userInput.value.trim();
     if (!text) return;
     unlockAudio();
 
-    const session = sessions.find(s => s.id === activeSessionId);
-    if (!session) return;
-
     userInput.value = '';
     userInput.style.height = 'auto';
-    sendBtn.disabled = true;
-    isBotTyping = true;
 
-    appendBubble(text, 'user', session.personality, true);
-    addTypingIndicator(session.personality);
+    addMessage(session, 'user', text);
+    session.pending = true;
+    syncInputState();
+    if (session.id === activeSessionId) addTypingIndicator(session.personality);
 
     await new Promise(r => setTimeout(r, 700 + Math.random() * 1000));
-    removeTypingIndicator();
+
+    session.pending = false;
+    if (session.id === activeSessionId) removeTypingIndicator();
 
     const pool = session.personality.responses;
     const reply = pool[Math.floor(Math.random() * pool.length)];
-    appendBubble(reply, 'bot', session.personality, true);
-    playChirp();
-
-    isBotTyping = false;
-    sendBtn.disabled = false;
-    userInput.focus();
+    addMessage(session, 'bot', reply);
+    if (session.id === activeSessionId) { playChirp(); syncInputState(); userInput.focus(); }
   }
 
   // ── reset active session ─────────────────────────────────────
@@ -714,13 +717,12 @@
     const session = sessions.find(s => s.id === activeSessionId);
     if (!session) return;
     removeTypingIndicator();
-    isBotTyping = false;
-    sendBtn.disabled = false;
-    session.messages = [];
+    session.pending = false;
     const greeting = session.personality.greeting || DEFAULT_PERSONALITY.greeting;
-    session.messages.push({ role: 'bot', text: greeting });
+    session.messages = [{ role: 'bot', text: greeting }];
     renderChatMessages(session);
     renderContacts();
+    syncInputState();
     showToast('\u{1F504} Chat cleared');
   }
 
