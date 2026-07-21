@@ -363,18 +363,69 @@
     #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: #7f1d1d; color: #fca5a5; }
 
-    /* Solo chat hides threads until logo opens them */
-    #app.solo.show-chat #sidebar { display: none !important; }
-    #app.solo.show-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
+    /* Desktop: solo chat hides the threads column */
+    @media (min-width: 641px) {
+      #app.solo.show-chat #sidebar { display: none !important; }
+      #app.solo.show-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
+    }
 
+    /* Mobile: app-like slide-over between chat and threads */
     @media (max-width: 640px) {
-      #sidebar { width: 100%; }
-      #app.show-sidebar #sidebar   { display: flex; }
-      #app.show-sidebar #chat-area { display: none; }
-      #app.show-chat #sidebar      { display: none; }
-      #app.show-chat #chat-area    { display: flex; }
-      #app.solo.show-sidebar #sidebar { display: flex !important; }
-      #app.solo.show-sidebar #chat-area { display: none !important; }
+      #app {
+        position: relative;
+      }
+
+      #sidebar,
+      #chat-area {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex !important;
+        border-right: none;
+        transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+        will-change: transform;
+      }
+
+      #sidebar {
+        z-index: 3;
+        transform: translate3d(-105%, 0, 0);
+        box-shadow: none;
+      }
+
+      #chat-area {
+        z-index: 1;
+        transform: translate3d(0, 0, 0);
+      }
+
+      #app.show-sidebar #sidebar {
+        transform: translate3d(0, 0, 0);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.55);
+        pointer-events: auto;
+      }
+
+      #app.show-sidebar #chat-area {
+        transform: translate3d(22%, 0, 0);
+        pointer-events: none;
+      }
+
+      #app.show-chat #sidebar {
+        transform: translate3d(-105%, 0, 0);
+        box-shadow: none;
+        pointer-events: none;
+      }
+
+      #app.show-chat #chat-area {
+        transform: translate3d(0, 0, 0);
+        pointer-events: auto;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #sidebar,
+        #chat-area {
+          transition: none;
+        }
+      }
     }
 
     /* ─── ADMIN OVERLAY ─────────────────────────────────────── */
