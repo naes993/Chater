@@ -64,24 +64,25 @@
     #sidebar-header h1 span { color: #a855f7; }
 
     #start-new-chat {
-      margin: 12px 16px;
-      width: calc(100% - 32px);
-      background: var(--accent-bg);
-      border: 1px solid var(--accent-border);
-      border-radius: 12px;
-      color: var(--accent-light);
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding: 12px 14px;
+      background: #7e22ce;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      width: 36px;
+      height: 36px;
       cursor: pointer;
-      text-align: center;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+      transition: background 0.2s, transform 0.1s;
       -webkit-user-select: none; user-select: none;
     }
     #start-new-chat:active {
-      border-color: var(--accent-light);
-      color: #fff;
-      background: #1f1428;
+      background: #a855f7;
+      transform: scale(0.92);
     }
 
     #contacts-list { flex: 1; overflow-y: auto; overflow-x: hidden; }
@@ -496,10 +497,10 @@
   <aside id="sidebar">
     <div id="sidebar-header">
       <h1 id="sidebar-logo">Chat<span>EBT</span></h1>
+      <button id="start-new-chat" type="button" title="Start New Chat" aria-label="Start New Chat">+</button>
     </div>
-    <button id="start-new-chat" type="button">+ Start New Chat</button>
     <input type="file" id="file-input" accept=".json" style="display:none" />
-    <div id="threads-empty">No chats yet. Tap Start New Chat to load a personality.</div>
+    <div id="threads-empty">No chats yet. Tap + to load a personality.</div>
     <div id="contacts-list"></div>
   </aside>
 
