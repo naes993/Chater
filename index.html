@@ -61,7 +61,6 @@
       cursor: pointer;
       -webkit-user-select: none; user-select: none;
     }
-    #sidebar-header h1 span { color: #a855f7; }
 
     #start-new-chat {
       background: #7e22ce;
@@ -137,7 +136,26 @@
     }
 
     .contact-info { flex: 1; min-width: 0; }
-    .contact-name { font-weight: 600; font-size: 0.95rem; color: #f0f0f0; }
+    .contact-top {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .contact-name {
+      flex: 1;
+      min-width: 0;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #f0f0f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .contact-time {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      color: #555;
+    }
     .contact-preview {
       font-size: 0.78rem;
       color: #555;
@@ -211,6 +229,13 @@
 
     #reset-btn { font-size: 1rem; padding: 6px 9px; color: #666; }
     #reset-btn:active { color: #fff; border-color: #555; }
+
+    #admin-chip {
+      display: none;
+      font-size: 0.72rem;
+      padding: 7px 10px;
+    }
+    #admin-chip.visible { display: inline-flex; }
 
     #chat-empty {
       display: none;
@@ -342,16 +367,29 @@
       border: 1px solid #333;
       color: #f0f0f0;
       font-size: 0.82rem;
-      padding: 9px 16px;
+      padding: 9px 12px 9px 16px;
       border-radius: 20px;
       white-space: nowrap;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s, transform 0.25s;
       z-index: 300;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100vw - 32px);
     }
-    #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
     #toast.error { border-color: #7f1d1d; color: #fca5a5; }
+    #toast .toast-undo {
+      background: none;
+      border: none;
+      color: var(--accent-light);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
 
     /* Desktop: solo chat hides the threads column */
     @media (min-width: 641px) {
@@ -365,26 +403,45 @@
         position: relative;
       }
 
+      #threads-scrim {
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 86%;
+        z-index: 4;
+        background: rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+      #app.show-sidebar #threads-scrim {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
       #sidebar,
       #chat-area {
         position: absolute;
         inset: 0;
-        width: 100%;
         height: 100%;
         display: flex !important;
         border-right: none;
-        transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+        transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
         will-change: transform;
       }
 
       #sidebar {
         z-index: 3;
+        width: 86%;
         transform: translate3d(-105%, 0, 0);
         box-shadow: none;
       }
 
       #chat-area {
         z-index: 1;
+        width: 100%;
         transform: translate3d(0, 0, 0);
       }
 
@@ -395,7 +452,7 @@
       }
 
       #app.show-sidebar #chat-area {
-        transform: translate3d(22%, 0, 0);
+        transform: translate3d(0, 0, 0);
         pointer-events: none;
       }
 
@@ -412,10 +469,15 @@
 
       @media (prefers-reduced-motion: reduce) {
         #sidebar,
-        #chat-area {
+        #chat-area,
+        #threads-scrim {
           transition: none;
         }
       }
+    }
+
+    @media (min-width: 641px) {
+      #threads-scrim { display: none !important; }
     }
 
     /* ─── ADMIN OVERLAY ─────────────────────────────────────── */
@@ -669,7 +731,7 @@
 
   <aside id="sidebar">
     <div id="sidebar-header">
-      <h1 id="sidebar-logo">Chat<span>EBT</span></h1>
+      <h1 id="sidebar-logo">Chats</h1>
       <button id="start-new-chat" type="button" title="Start New Chat" aria-label="Start New Chat">+</button>
     </div>
     <div id="threads-empty">
@@ -679,12 +741,15 @@
     <div id="contacts-list"></div>
   </aside>
 
+  <div id="threads-scrim" aria-hidden="true"></div>
+
   <main id="chat-area">
     <header id="chat-header">
       <div class="header-text" id="chat-logo" title="Tap for chats">
         <h1>Chat<span id="bot-name">EBT</span></h1>
         <p class="tagline">powered by pure unfiltered energy &#9889;</p>
       </div>
+      <button id="admin-chip" class="header-btn" type="button" title="Admin">Admin</button>
       <button id="reset-btn" class="header-btn" aria-label="Reset chat" title="Clear this chat">&#x21BA;</button>
     </header>
     <div id="chat-empty">No active chat.<br/>Tap the logo to open threads.</div>
@@ -867,12 +932,16 @@
   const STORAGE_SESSIONS = 'chater.sessions';
   const STORAGE_ACTIVE = 'chater.activeSessionId';
   const STORAGE_ADMIN = 'chater.adminUnlocked';
+  const STORAGE_VERSION = 'chater.schemaVersion';
+  const SCHEMA_VERSION = 1;
 
   let sessions = [];
   let packs = [];
   let activeSessionId = null;
   let isBotTyping = false;
   let adminView = { screen: 'packs', packId: null, personaId: null };
+  let undoTimer = null;
+  let pendingUndo = null;
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
@@ -915,6 +984,9 @@
   const adminTitle    = document.getElementById('admin-title');
   const adminBack     = document.getElementById('admin-back');
   const adminClose    = document.getElementById('admin-close');
+  const adminChip     = document.getElementById('admin-chip');
+  const threadsScrim  = document.getElementById('threads-scrim');
+  const sidebarEl     = document.getElementById('sidebar');
   const pickerEl      = document.getElementById('picker');
   const pickerBody    = document.getElementById('picker-body');
   const pickerTitle   = document.getElementById('picker-title');
@@ -933,6 +1005,7 @@
 
   function saveState() {
     try {
+      localStorage.setItem(STORAGE_VERSION, String(SCHEMA_VERSION));
       localStorage.setItem(STORAGE_SESSIONS, JSON.stringify(sessions));
       localStorage.setItem(STORAGE_ACTIVE, activeSessionId || '');
       localStorage.setItem(STORAGE_PACKS, JSON.stringify(packs));
@@ -941,6 +1014,10 @@
 
   function loadState() {
     try {
+      const ver = parseInt(localStorage.getItem(STORAGE_VERSION) || '1', 10);
+      if (ver > SCHEMA_VERSION) {
+        console.warn('Newer ChatEBT data version found; loading best-effort.');
+      }
       const rawPacks = localStorage.getItem(STORAGE_PACKS);
       packs = rawPacks ? JSON.parse(rawPacks) : seedDefaultPack();
       if (!Array.isArray(packs) || packs.length === 0) packs = seedDefaultPack();
@@ -1003,11 +1080,51 @@
 
   // ── toast ────────────────────────────────────────────────────
   let toastTimer;
-  function showToast(msg, isError = false) {
+  function clearPendingUndo() {
+    pendingUndo = null;
+    if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+  }
+
+  function showToast(msg, isError = false, onUndo = null) {
     clearTimeout(toastTimer);
-    toast.textContent = msg;
-    toast.className   = 'show' + (isError ? ' error' : '');
-    toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
+    clearPendingUndo();
+    toast.textContent = '';
+    const label = document.createElement('span');
+    label.textContent = msg;
+    toast.appendChild(label);
+    if (typeof onUndo === 'function') {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toast-undo';
+      btn.textContent = 'Undo';
+      btn.addEventListener('click', () => {
+        clearTimeout(toastTimer);
+        clearPendingUndo();
+        toast.className = '';
+        onUndo();
+      });
+      toast.appendChild(btn);
+      pendingUndo = onUndo;
+      undoTimer = setTimeout(() => { pendingUndo = null; undoTimer = null; }, 3000);
+    }
+    toast.className = 'show' + (isError ? ' error' : '');
+    toastTimer = setTimeout(() => {
+      toast.className = '';
+      clearPendingUndo();
+    }, 3000);
+  }
+
+  function formatRelativeTime(ts) {
+    if (!ts) return '';
+    const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (sec < 45) return 'now';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm';
+    if (sec < 86400) return Math.floor(sec / 3600) + 'h';
+    try {
+      return new Date(ts).toLocaleDateString(undefined, { weekday: 'short' });
+    } catch {
+      return '';
+    }
   }
 
   function escapeHtml(str) {
@@ -1084,28 +1201,42 @@
   function removeSession(id) {
     const idx = sessions.findIndex(s => s.id === id);
     if (idx < 0) return;
-    const wasActive = activeSessionId === id;
+    const snapshot = {
+      session: JSON.parse(JSON.stringify(sessions[idx])),
+      idx,
+      wasActive: activeSessionId === id,
+      prevActive: activeSessionId
+    };
     sessions.splice(idx, 1);
-    if (wasActive) {
+    if (snapshot.wasActive) {
       activeSessionId = sessions[0] ? sessions[0].id : null;
     }
     saveState();
     renderContacts();
     if (activeSessionId) {
-      selectSession(activeSessionId);
+      const keep = activeSessionId;
+      selectSession(keep);
       setView('sidebar');
     } else {
       botNameEl.textContent = 'EBT';
       chatWindow.innerHTML = '';
       setView('sidebar');
     }
-    showToast('Chat removed');
+    showToast('Chat removed', false, () => {
+      sessions.splice(Math.min(snapshot.idx, sessions.length), 0, snapshot.session);
+      activeSessionId = snapshot.wasActive ? snapshot.session.id : snapshot.prevActive;
+      saveState();
+      renderContacts();
+      if (activeSessionId) selectSession(activeSessionId);
+      setView('sidebar');
+      showToast('Chat restored');
+    });
   }
 
   function confirmRemoveSession(id) {
     const session = sessions.find(s => s.id === id);
     const name = session?.personality?.name || 'this chat';
-    if (confirm('Remove chat with ' + name + '?')) removeSession(id);
+    if (confirm('Delete chat with ' + name + '?')) removeSession(id);
   }
 
   function bindThreadGestures(row, item, sessionId) {
@@ -1223,7 +1354,10 @@
       item.innerHTML =
         '<div class="contact-avatar" style="background:' + (p.accentColor || '#7e22ce') + '">' + escapeHtml(p.avatar || '') + '</div>' +
         '<div class="contact-info">' +
-          '<div class="contact-name">' + escapeHtml(p.name || 'Chat') + '</div>' +
+          '<div class="contact-top">' +
+            '<div class="contact-name">' + escapeHtml(p.name || 'Chat') + '</div>' +
+            '<div class="contact-time">' + escapeHtml(formatRelativeTime(last && last.ts)) + '</div>' +
+          '</div>' +
           '<div class="contact-preview">' + escapeHtml((preview || '').slice(0, 50)) + '</div>' +
         '</div>';
 
@@ -1266,7 +1400,7 @@
     if (save) {
       const session = sessions.find(s => s.id === activeSessionId);
       if (session) {
-        session.messages.push({ role, text });
+        session.messages.push({ role, text, ts: Date.now() });
         renderContacts();
         saveState();
       }
@@ -1352,7 +1486,7 @@
     sendBtn.disabled = false;
     session.messages = [];
     const greeting = session.personality.greeting || DEFAULT_PERSONALITY.greeting;
-    session.messages.push({ role: 'bot', text: greeting });
+    session.messages.push({ role: 'bot', text: greeting, ts: Date.now() });
     renderChatMessages(session);
     renderContacts();
     saveState();
@@ -1368,7 +1502,7 @@
     const session = {
       id: uid(),
       personality: p,
-      messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting }]
+      messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting, ts: Date.now() }]
     };
     sessions.push(session);
     saveState();
@@ -1485,13 +1619,19 @@
     return sessionStorage.getItem(STORAGE_ADMIN) === '1';
   }
 
-  function openAdmin() {
+  function updateAdminChip() {
+    adminChip.classList.toggle('visible', isAdminUnlocked());
+  }
+
+  function openAdmin(opts = {}) {
+    const firstUnlock = !isAdminUnlocked();
     sessionStorage.setItem(STORAGE_ADMIN, '1');
+    updateAdminChip();
     adminView = { screen: 'packs', packId: null, personaId: null };
     adminEl.classList.add('open');
     adminEl.setAttribute('aria-hidden', 'false');
     renderAdmin();
-    showToast('Admin unlocked');
+    if (!opts.silent && firstUnlock) showToast('Admin unlocked');
   }
 
   function closeAdmin() {
@@ -1509,6 +1649,50 @@
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function exportBackup() {
+    downloadJson('chater-backup.json', {
+      version: SCHEMA_VERSION,
+      packs,
+      sessions,
+      activeSessionId
+    });
+    showToast('Backup exported');
+  }
+
+  function importBackupFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || !Array.isArray(data.packs) || !Array.isArray(data.sessions)) {
+          throw new Error('bad');
+        }
+        if (!confirm('Replace all packs and chats with this backup?')) return;
+        packs = data.packs;
+        sessions = data.sessions;
+        activeSessionId = data.activeSessionId || (sessions[0] && sessions[0].id) || null;
+        saveState();
+        renderContacts();
+        if (activeSessionId && sessions.find(s => s.id === activeSessionId)) {
+          selectSession(activeSessionId);
+        } else if (sessions[0]) {
+          selectSession(sessions[0].id);
+        } else {
+          botNameEl.textContent = 'EBT';
+          chatWindow.innerHTML = '';
+          setView('sidebar');
+        }
+        adminView = { screen: 'packs', packId: null, personaId: null };
+        renderAdmin();
+        showToast('Backup restored');
+      } catch {
+        showToast('Invalid backup file.', true);
+      }
+    };
+    reader.readAsText(file);
   }
 
   function personaExportShape(persona) {
@@ -1543,6 +1727,8 @@
     let html = '<div class="admin-toolbar">' +
       '<button class="admin-btn primary" data-act="new-pack">+ New pack</button>' +
       '<button class="admin-btn" data-act="import-pack">Import pack JSON</button>' +
+      '<button class="admin-btn" data-act="export-backup">Export backup</button>' +
+      '<button class="admin-btn" data-act="import-backup">Import backup</button>' +
       '</div>';
     packs.forEach(pack => {
       html += '<div class="admin-row" data-pack="' + pack.id + '">' +
@@ -1668,6 +1854,18 @@
       saveState();
       adminView = { screen: 'pack', packId: pack.id, personaId: null };
       renderAdmin();
+      return;
+    }
+    if (act === 'export-backup') {
+      exportBackup();
+      return;
+    }
+    if (act === 'import-backup') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = () => importBackupFile(input.files[0]);
+      input.click();
       return;
     }
     if (act === 'open-pack') {
@@ -1819,6 +2017,8 @@
   startNewChat.addEventListener('click', openPicker);
   threadsEmptyCta.addEventListener('click', openPicker);
   resetBtn.addEventListener('click', resetActiveSession);
+  adminChip.addEventListener('click', () => openAdmin({ silent: true }));
+  threadsScrim.addEventListener('click', () => setView('chat'));
   sendBtn.addEventListener('click', handleSend);
   userInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -1829,17 +2029,74 @@
   });
 
   attachLogoGestures(chatLogo, { onTap: () => setView('sidebar') });
-  // Sidebar logo: normal tap stays on threads; 10 taps / 10s hold still opens admin.
+  // Sidebar title: normal tap stays on threads; 10 taps / 10s hold still opens admin.
   attachLogoGestures(sidebarLogo, { onTap: () => {} });
+
+  // Swipe left on threads chrome (not rows) to dismiss back to chat
+  (function bindSidebarSwipeDismiss() {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let active = false;
+
+    sidebarEl.addEventListener('pointerdown', e => {
+      if (window.innerWidth > 640) return;
+      if (!appEl.classList.contains('show-sidebar')) return;
+      if (e.target.closest('.contact-item, .contact-delete, button, a, input, textarea, #sidebar-logo')) return;
+      if (e.button != null && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      tracking = true;
+      active = false;
+    });
+
+    sidebarEl.addEventListener('pointermove', e => {
+      if (!tracking) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!active) {
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+        if (Math.abs(dx) <= Math.abs(dy) || dx > 0) {
+          tracking = false;
+          return;
+        }
+        active = true;
+      }
+      const tx = Math.max(-120, Math.min(0, dx));
+      sidebarEl.style.transition = 'none';
+      sidebarEl.style.transform = 'translate3d(' + tx + 'px, 0, 0)';
+    });
+
+    function endSwipe(e) {
+      if (!tracking) return;
+      tracking = false;
+      sidebarEl.style.transition = '';
+      if (active) {
+        const dx = e.clientX - startX;
+        sidebarEl.style.transform = '';
+        if (dx < -64) setView('chat');
+      }
+      active = false;
+    }
+
+    sidebarEl.addEventListener('pointerup', endSwipe);
+    sidebarEl.addEventListener('pointercancel', () => {
+      tracking = false;
+      active = false;
+      sidebarEl.style.transition = '';
+      sidebarEl.style.transform = '';
+    });
+  })();
 
   // ── init ─────────────────────────────────────────────────────
   (function init() {
     loadState();
+    updateAdminChip();
     if (!sessions.length) {
       sessions.push({
         id: 'ebt',
         personality: clonePersonality(DEFAULT_PERSONALITY),
-        messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting }]
+        messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting, ts: Date.now() }]
       });
       activeSessionId = 'ebt';
       saveState();
