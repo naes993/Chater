@@ -11,10 +11,12 @@
 
     html {
       --app-height: 100dvh;
+      --app-top: 0px;
       --accent:       #7e22ce;
       --accent-light: #a855f7;
       --accent-bg:    #18101f;
       --accent-border:#2d1b45;
+      height: 100%;
     }
 
     body {
@@ -24,6 +26,12 @@
       overscroll-behavior: none;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      height: 100%;
+      overflow: hidden;
+      /* Keep the document from scrolling under the iOS keyboard */
+      position: fixed;
+      inset: 0;
+      width: 100%;
     }
 
     #app {
@@ -31,7 +39,11 @@
       flex-direction: column;
       align-items: center;
       width: 100%;
-      height: 100vh;
+      /* Pin to the visual viewport so Safari keyboard offset can't shove the composer to the top */
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: var(--app-top);
       height: var(--app-height);
       overflow: hidden;
     }
@@ -240,8 +252,8 @@
   <div id="chat-window"></div>
 
   <div id="input-area">
-    <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
-    <button id="send-btn" aria-label="Send">&#10148;</button>
+    <textarea id="user-input" rows="1" placeholder="Say something..." enterkeyhint="send" autocomplete="off" autocorrect="on" autocapitalize="sentences"></textarea>
+    <button id="send-btn" type="button" aria-label="Send">&#10148;</button>
   </div>
 
 </div>
@@ -399,14 +411,38 @@
   const toast      = document.getElementById('toast');
   const botNameEl  = document.getElementById('bot-name');
 
-  function syncHeight() {
-    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  // iOS Safari shrinks visualViewport when the keyboard opens AND scrolls it
+  // (offsetTop > 0). Matching both keeps the composer glued above the keyboard
+  // instead of jumping to the top of the screen with a giant gap below.
+  function syncViewport() {
+    const vv = window.visualViewport;
+    const h = vv ? vv.height : window.innerHeight;
+    const top = vv ? vv.offsetTop : 0;
     document.documentElement.style.setProperty('--app-height', h + 'px');
+    document.documentElement.style.setProperty('--app-top', top + 'px');
   }
-  syncHeight();
-  (window.visualViewport || window).addEventListener('resize', () => {
-    syncHeight();
+  function onViewportChange() {
+    syncViewport();
     requestAnimationFrame(scrollBottom);
+  }
+  syncViewport();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportChange);
+    window.visualViewport.addEventListener('scroll', onViewportChange);
+  } else {
+    window.addEventListener('resize', onViewportChange);
+  }
+  window.addEventListener('orientationchange', () => {
+    setTimeout(onViewportChange, 250);
+  });
+  // Re-sync after focus: Safari often updates offsetTop a tick late
+  userInput.addEventListener('focus', () => {
+    setTimeout(onViewportChange, 50);
+    setTimeout(onViewportChange, 300);
+  });
+  userInput.addEventListener('blur', () => {
+    setTimeout(onViewportChange, 50);
+    setTimeout(onViewportChange, 300);
   });
 
   // ── audio ─────────────────────────────────────────────────────
