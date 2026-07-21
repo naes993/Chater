@@ -831,6 +831,63 @@
       font-size: 0.88rem;
       line-height: 1.5;
     }
+    .picker-actions {
+      padding: 12px 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .picker-action {
+      width: 100%;
+      text-align: left;
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 14px;
+      color: #f0f0f0;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+    .picker-action:active { background: #1a1a1a; }
+    .picker-action strong { display: block; font-size: 0.95rem; margin-bottom: 3px; }
+    .picker-action span { display: block; font-size: 0.75rem; color: #777; }
+    .picker-action.primary {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+    }
+    .picker-action.primary strong { color: var(--accent-light); }
+    #picker-body .admin-form { padding: 4px 16px 16px; }
+    #picker-body .admin-toolbar { margin-top: 8px; }
+
+    .browse-section-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 4px 10px;
+    }
+    .browse-section-head .browse-pack-title { margin: 0; flex: 1; }
+    .browse-add-btn {
+      background: none;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: var(--accent-light);
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .browse-tile-wrap { position: relative; }
+    .browse-tile-del {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: #3f1d1d;
+      color: #fca5a5;
+      font-size: 0.7rem;
+      cursor: pointer;
+      line-height: 1;
+      z-index: 1;
+    }
 
     #threads-empty {
       display: none;
@@ -918,7 +975,7 @@
     <div id="sidebar-header">
       <h1 id="sidebar-logo">Chats</h1>
       <button id="browse-packs" type="button" title="Browse packs" aria-label="Browse packs">&#9638;</button>
-      <button id="start-new-chat" type="button" title="Start New Chat" aria-label="Start New Chat">+</button>
+      <button id="start-new-chat" type="button" title="Add persona or start chat" aria-label="Compose">+</button>
     </div>
     <div id="threads-pane">
       <div id="threads-empty">
@@ -985,7 +1042,7 @@
   <div id="about-sheet" role="dialog" aria-modal="true" aria-labelledby="about-title">
     <h2 id="about-title">Chat<span>EBT</span></h2>
     <p class="about-tag">powered by pure unfiltered energy &#9889;</p>
-    <p class="about-copy">A persona chat app for packs of characters — load a cast, start threads, and keep the chaos in the replies.</p>
+    <p class="about-copy">Browse packs to discover characters. Use + to add your own personas to My Personas, start a new chat, or import JSON. Optional: point a persona at a local Hermes bridge for live comebacks.</p>
     <button id="about-close" type="button">Close</button>
   </div>
 </div>
@@ -1161,15 +1218,43 @@
   }
 
   function seedDefaultPack() {
-    return [{
-      id: 'default',
-      name: 'Default',
-      builtin: true,
-      personas: [{
-        id: 'persona-ebt',
-        ...clonePersonality(DEFAULT_PERSONALITY)
-      }]
-    }];
+    return [
+      {
+        id: 'my-personas',
+        name: 'My Personas',
+        personal: true,
+        builtin: false,
+        personas: []
+      },
+      {
+        id: 'default',
+        name: 'Default',
+        builtin: true,
+        personas: [{
+          id: 'persona-ebt',
+          ...clonePersonality(DEFAULT_PERSONALITY)
+        }]
+      }
+    ];
+  }
+
+  function ensureMyPersonasPack() {
+    let mine = packs.find(p => p.id === 'my-personas' || p.personal);
+    if (!mine) {
+      mine = {
+        id: 'my-personas',
+        name: 'My Personas',
+        personal: true,
+        builtin: false,
+        personas: []
+      };
+      packs.unshift(mine);
+      saveState();
+    } else {
+      mine.personal = true;
+      if (!mine.id) mine.id = 'my-personas';
+    }
+    return mine;
   }
 
   // ── DOM refs ────────────────────────────────────────────────
@@ -1265,6 +1350,7 @@
       const rawPacks = localStorage.getItem(STORAGE_PACKS);
       packs = rawPacks ? JSON.parse(rawPacks) : seedDefaultPack();
       if (!Array.isArray(packs) || packs.length === 0) packs = seedDefaultPack();
+      ensureMyPersonasPack();
 
       const rawSessions = localStorage.getItem(STORAGE_SESSIONS);
       if (rawSessions) {
@@ -1693,6 +1779,44 @@
 
   function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
 
+  async function getBotReply(session) {
+    const p = session.personality || DEFAULT_PERSONALITY;
+    const endpoint = (p.agentEndpoint || '').trim();
+    if ((p.replyMode === 'agent' || endpoint) && endpoint) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20000);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            persona: {
+              name: p.name,
+              greeting: p.greeting,
+              systemPrompt: p.systemPrompt || ('You are ' + p.name + '. Stay in character. Keep replies short and punchy.')
+            },
+            messages: (session.messages || []).slice(-24).map(m => ({
+              role: m.role === 'bot' ? 'assistant' : 'user',
+              content: m.text
+            }))
+          }),
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data && typeof data.reply === 'string' && data.reply.trim()) {
+          return data.reply.trim();
+        }
+        throw new Error('empty reply');
+      } catch (err) {
+        showToast('Agent unreachable — canned reply', true);
+      }
+    }
+    const pool = p.responses || DEFAULT_PERSONALITY.responses;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
   async function handleSend() {
     if (!activeSessionId || isBotTyping) return;
     const text = userInput.value.trim();
@@ -1710,11 +1834,9 @@
     appendBubble(text, 'user', session.personality, true);
     addTypingIndicator(session.personality);
 
-    await new Promise(r => setTimeout(r, 700 + Math.random() * 1000));
+    await new Promise(r => setTimeout(r, 400 + Math.random() * 500));
+    const reply = await getBotReply(session);
     removeTypingIndicator();
-
-    const pool = session.personality.responses;
-    const reply = pool[Math.floor(Math.random() * pool.length)];
     appendBubble(reply, 'bot', session.personality, true);
     playReplySound();
 
@@ -1761,6 +1883,8 @@
   function packsForPicker() {
     const list = (packs || []).slice();
     list.sort((a, b) => {
+      if (a.personal && !b.personal) return -1;
+      if (!a.personal && b.personal) return 1;
       if (a.builtin && !b.builtin) return 1;
       if (!a.builtin && b.builtin) return -1;
       return String(a.name || '').localeCompare(String(b.name || ''));
@@ -1768,15 +1892,24 @@
     return list;
   }
 
-  function openPicker() {
+  function openCompose() {
     closeBrowse();
     setView('sidebar');
-    const withPersonas = packsForPicker().filter(p => (p.personas || []).length > 0);
-    if (withPersonas.length === 1) {
-      pickerView = { screen: 'personas', packId: withPersonas[0].id };
-    } else {
-      pickerView = { screen: 'packs', packId: null };
-    }
+    pickerView = { screen: 'home', packId: null };
+    pickerEl.classList.add('open');
+    pickerEl.setAttribute('aria-hidden', 'false');
+    renderPicker();
+  }
+
+  function openPicker() {
+    openCompose();
+  }
+
+  function openAddPersonaForm() {
+    closeBrowse();
+    setView('sidebar');
+    ensureMyPersonasPack();
+    pickerView = { screen: 'add', packId: 'my-personas' };
     pickerEl.classList.add('open');
     pickerEl.setAttribute('aria-hidden', 'false');
     renderPicker();
@@ -1800,29 +1933,43 @@
   }
 
   function renderBrowse() {
+    ensureMyPersonasPack();
     const list = packsForPicker();
     if (!list.length) {
-      browseBody.innerHTML = '<div class="browse-empty">No packs yet. Unlock admin to create one.</div>';
+      browseBody.innerHTML = '<div class="browse-empty">No packs yet.</div>';
       return;
     }
     let html = '';
     list.forEach(pack => {
       const personas = pack.personas || [];
-      html += '<section class="browse-section">' +
+      const isPersonal = !!pack.personal;
+      html += '<section class="browse-section"><div class="browse-section-head">' +
         '<div class="browse-pack-title">' + escapeHtml(pack.name) +
-          (pack.builtin ? ' · built-in' : '') + '</div>';
+          (pack.builtin ? ' · built-in' : '') +
+          (isPersonal ? ' · yours' : '') + '</div>';
+      if (isPersonal) {
+        html += '<button type="button" class="browse-add-btn" data-browse-add>Add</button>';
+      }
+      html += '</div>';
       if (!personas.length) {
-        html += '<div class="browse-empty">No personas in this pack.</div>';
+        html += '<div class="browse-empty">' +
+          (isPersonal ? 'No personas yet. Tap Add to create one.' : 'No personas in this pack.') +
+          '</div>';
       } else {
         html += '<div class="browse-grid">';
         personas.forEach(persona => {
-          html += '<button type="button" class="browse-tile" data-browse-pack="' + pack.id +
+          html += '<div class="browse-tile-wrap">' +
+            (isPersonal
+              ? '<button type="button" class="browse-tile-del" data-del-pack="' + pack.id +
+                '" data-del-persona="' + persona.id + '" title="Delete">×</button>'
+              : '') +
+            '<button type="button" class="browse-tile" data-browse-pack="' + pack.id +
             '" data-browse-persona="' + persona.id + '">' +
             '<div class="browse-tile-avatar" style="background:' + escapeHtml(persona.accentColor || '#7e22ce') + '">' +
               escapeHtml(persona.avatar || '💬') +
             '</div>' +
             '<div class="browse-tile-name">' + escapeHtml(persona.name || 'Persona') + '</div>' +
-          '</button>';
+          '</button></div>';
         });
         html += '</div>';
       }
@@ -1832,14 +1979,59 @@
   }
 
   function renderPicker() {
-    const showBack = pickerView.screen === 'personas' && packsForPicker().filter(p => (p.personas || []).length > 0).length > 1;
-    pickerBack.classList.toggle('visible', showBack);
+    const screen = pickerView.screen;
+    pickerBack.classList.toggle('visible', screen === 'packs' || screen === 'personas' || screen === 'add');
 
-    if (pickerView.screen === 'packs') {
+    if (screen === 'home') {
+      pickerTitle.textContent = 'Compose';
+      pickerBody.innerHTML =
+        '<div class="picker-actions">' +
+          '<button type="button" class="picker-action primary" data-compose="add">' +
+            '<strong>Add a persona</strong>' +
+            '<span>Create one in My Personas — no admin needed</span>' +
+          '</button>' +
+          '<button type="button" class="picker-action" data-compose="chat">' +
+            '<strong>New chat</strong>' +
+            '<span>Pick someone from your packs</span>' +
+          '</button>' +
+          '<button type="button" class="picker-action" data-compose="import">' +
+            '<strong>Import JSON</strong>' +
+            '<span>Load a personality file into My Personas</span>' +
+          '</button>' +
+        '</div>';
+      return;
+    }
+
+    if (screen === 'add') {
+      pickerTitle.textContent = 'Add persona';
+      pickerBody.innerHTML =
+        '<form class="admin-form" id="add-persona-form">' +
+          '<label>Name</label><input name="name" placeholder="e.g. Jim" required />' +
+          '<label>Avatar</label><input name="avatar" placeholder="☕" value="💬" />' +
+          '<label>Greeting</label><input name="greeting" placeholder="Hey." value="Hey." />' +
+          '<label>Canned replies (one per line)</label>' +
+          '<textarea name="responses" placeholder="Okay.&#10;Sure.&#10;Hmm.">Okay.\nSure.\nHmm.</textarea>' +
+          '<label>Optional agent endpoint (Hermes / local bridge)</label>' +
+          '<input name="agentEndpoint" placeholder="http://127.0.0.1:8787/reply" />' +
+          '<p class="admin-hint">Leave blank to use canned replies. Run agent-bridge.js locally to connect Hermes.</p>' +
+          '<div class="admin-toolbar">' +
+            '<button class="admin-btn primary" type="submit">Save & chat</button>' +
+            '<button class="admin-btn" type="button" data-compose="home">Cancel</button>' +
+          '</div>' +
+        '</form>';
+      const form = document.getElementById('add-persona-form');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        savePersonaFromForm(form, true);
+      });
+      return;
+    }
+
+    if (screen === 'packs') {
       pickerTitle.textContent = 'New chat';
-      const list = packsForPicker();
+      const list = packsForPicker().filter(p => (p.personas || []).length > 0);
       if (!list.length) {
-        pickerBody.innerHTML = '<div class="picker-empty">No packs yet. Unlock admin to create one.</div>';
+        pickerBody.innerHTML = '<div class="picker-empty">No personas yet. Add one first.</div>';
         return;
       }
       pickerBody.innerHTML = list.map(pack => {
@@ -1849,6 +2041,7 @@
           '<div class="picker-meta">' +
             '<div class="picker-name">' + escapeHtml(pack.name) + '</div>' +
             '<div class="picker-sub">' + count + ' persona' + (count === 1 ? '' : 's') +
+              (pack.personal ? ' · yours' : '') +
               (pack.builtin ? ' · built-in' : '') + '</div>' +
           '</div></div>';
       }).join('');
@@ -1869,12 +2062,94 @@
         '</div>' +
         '<div class="picker-meta">' +
           '<div class="picker-name">' + escapeHtml(persona.name || 'Persona') + '</div>' +
-          '<div class="picker-sub">Start chat</div>' +
+          '<div class="picker-sub">' + (persona.agentEndpoint ? 'Agent + canned fallback' : 'Start chat') + '</div>' +
         '</div></div>';
     }).join('');
   }
 
+  function savePersonaFromForm(form, startChat) {
+    const fd = new FormData(form);
+    const responses = String(fd.get('responses') || '')
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (!responses.length) {
+      showToast('Add at least one canned reply line.', true);
+      return;
+    }
+    const endpoint = String(fd.get('agentEndpoint') || '').trim();
+    const persona = {
+      id: uid(),
+      name: String(fd.get('name') || 'Persona').trim() || 'Persona',
+      avatar: String(fd.get('avatar') || '💬'),
+      greeting: String(fd.get('greeting') || 'Hey.'),
+      accentColor: DEFAULT_PERSONALITY.accentColor,
+      accentLight: DEFAULT_PERSONALITY.accentLight,
+      accentBg: DEFAULT_PERSONALITY.accentBg,
+      accentBorder: DEFAULT_PERSONALITY.accentBorder,
+      responses,
+      replyMode: endpoint ? 'agent' : 'canned',
+      agentEndpoint: endpoint || ''
+    };
+    const mine = ensureMyPersonasPack();
+    mine.personas.push(persona);
+    saveState();
+    closePicker();
+    if (startChat) {
+      addSessionFromPersonality(persona, 'Started chat: ' + persona.name);
+    } else {
+      showToast('Saved ' + persona.name);
+      openBrowse();
+    }
+  }
+
+  function importPersonaToMyPack(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!Array.isArray(data.responses) || !data.responses.length) throw new Error('bad');
+        const persona = { id: uid(), ...clonePersonality(data) };
+        if (data.agentEndpoint) {
+          persona.agentEndpoint = data.agentEndpoint;
+          persona.replyMode = 'agent';
+        }
+        const mine = ensureMyPersonasPack();
+        mine.personas.push(persona);
+        saveState();
+        closePicker();
+        showToast('Imported ' + (persona.name || 'persona'));
+        openBrowse();
+      } catch {
+        showToast('Invalid persona JSON.', true);
+      }
+    };
+    reader.readAsText(file);
+  }
+
   pickerBody.addEventListener('click', e => {
+    const compose = e.target.closest('[data-compose]');
+    if (compose) {
+      const act = compose.getAttribute('data-compose');
+      if (act === 'add') {
+        pickerView = { screen: 'add', packId: 'my-personas' };
+        renderPicker();
+      } else if (act === 'chat') {
+        pickerView = { screen: 'packs', packId: null };
+        renderPicker();
+      } else if (act === 'home') {
+        pickerView = { screen: 'home', packId: null };
+        renderPicker();
+      } else if (act === 'import') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = () => importPersonaToMyPack(input.files[0]);
+        input.click();
+      }
+      return;
+    }
     const packRow = e.target.closest('[data-pick-pack]');
     if (packRow) {
       const pack = getPack(packRow.getAttribute('data-pick-pack'));
@@ -1898,6 +2173,23 @@
   });
 
   browseBody.addEventListener('click', e => {
+    if (e.target.closest('[data-browse-add]')) {
+      openAddPersonaForm();
+      return;
+    }
+    const del = e.target.closest('[data-del-persona]');
+    if (del) {
+      const pack = getPack(del.getAttribute('data-del-pack'));
+      const pid = del.getAttribute('data-del-persona');
+      const persona = pack?.personas?.find(p => p.id === pid);
+      if (!pack || !persona || !pack.personal) return;
+      if (!confirm('Delete persona “' + persona.name + '”?')) return;
+      pack.personas = pack.personas.filter(p => p.id !== pid);
+      saveState();
+      renderBrowse();
+      showToast('Deleted ' + persona.name);
+      return;
+    }
     const tile = e.target.closest('[data-browse-persona]');
     if (!tile) return;
     const pack = getPack(tile.getAttribute('data-browse-pack'));
@@ -1908,7 +2200,14 @@
   });
 
   pickerBack.addEventListener('click', () => {
-    pickerView = { screen: 'packs', packId: null };
+    if (pickerView.screen === 'personas') {
+      pickerView = { screen: 'packs', packId: null };
+    } else if (pickerView.screen === 'packs' || pickerView.screen === 'add') {
+      pickerView = { screen: 'home', packId: null };
+    } else {
+      closePicker();
+      return;
+    }
     renderPicker();
   });
   pickerClose.addEventListener('click', closePicker);
