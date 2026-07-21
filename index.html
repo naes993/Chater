@@ -61,7 +61,8 @@
     }
     #sidebar-header h1 span { color: #a855f7; }
 
-    #add-btn {
+    #add-btn,
+    #chat-add-btn {
       background: #7e22ce;
       border: none;
       border-radius: 50%;
@@ -75,7 +76,11 @@
       line-height: 1;
       -webkit-user-select: none; user-select: none;
     }
-    #add-btn:active { background: #a855f7; transform: scale(0.92); }
+    #add-btn:active,
+    #chat-add-btn:active { background: #a855f7; transform: scale(0.92); }
+
+    /* Chat-header + is only for single-persona mode */
+    #chat-add-btn { display: none; font-size: 1.25rem; width: 34px; height: 34px; }
 
     #contacts-list { flex: 1; overflow-y: auto; }
     #contacts-list::-webkit-scrollbar { display: none; }
@@ -325,20 +330,27 @@
     #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: #7f1d1d; color: #fca5a5; }
 
+    /* ─── SINGLE vs MULTI THREAD LAYOUT ─────────────────────── */
+    /* One persona: hide threads list and live in the chat only */
+    #app.single-chat #sidebar { display: none !important; }
+    #app.single-chat #chat-area { display: flex !important; flex: 1; width: 100%; }
+    #app.single-chat #back-btn { display: none !important; }
+    #app.single-chat #chat-add-btn { display: flex; }
+
     /* ─── MOBILE ────────────────────────────────────────────── */
     @media (max-width: 640px) {
       #sidebar { width: 100%; }
-      #back-btn { display: flex; align-items: center; }
+      #app.multi-chat #back-btn { display: flex; align-items: center; }
 
-      #app.show-sidebar #sidebar   { display: flex; }
-      #app.show-sidebar #chat-area { display: none; }
-      #app.show-chat    #sidebar   { display: none; }
-      #app.show-chat    #chat-area { display: flex; }
+      #app.multi-chat.show-sidebar #sidebar   { display: flex; }
+      #app.multi-chat.show-sidebar #chat-area { display: none; }
+      #app.multi-chat.show-chat    #sidebar   { display: none; }
+      #app.multi-chat.show-chat    #chat-area { display: flex; }
     }
   </style>
 </head>
 <body>
-<div id="app" class="show-sidebar">
+<div id="app" class="single-chat show-chat">
 
   <aside id="sidebar">
     <div id="sidebar-header">
@@ -357,6 +369,7 @@
         <span id="active-name"></span>
         <span id="active-subtitle">active now</span>
       </div>
+      <button id="chat-add-btn" title="Load personality JSON">+</button>
       <button id="reset-btn" title="Clear this chat">&#x21BA;</button>
     </header>
     <div id="chat-window"></div>
@@ -525,11 +538,25 @@
   const sendBtn       = document.getElementById('send-btn');
   const resetBtn      = document.getElementById('reset-btn');
   const addBtn        = document.getElementById('add-btn');
+  const chatAddBtn    = document.getElementById('chat-add-btn');
   const fileInput     = document.getElementById('file-input');
   const backBtn       = document.getElementById('back-btn');
   const headerAvatar  = document.getElementById('chat-header-avatar');
   const activeName    = document.getElementById('active-name');
   const toast         = document.getElementById('toast');
+
+  function hasMultipleThreads() {
+    return sessions.length > 1;
+  }
+
+  // Keep single-chat (no thread list) until a second persona is loaded.
+  function setView(view) {
+    const multi = hasMultipleThreads();
+    const mode  = multi ? 'multi-chat' : 'single-chat';
+    // Single-persona mode always stays on the chat screen.
+    const pane  = multi && view === 'sidebar' ? 'show-sidebar' : 'show-chat';
+    appEl.className = mode + ' ' + pane;
+  }
 
   // ── viewport height fix ─────────────────────────────────────
   function syncHeight() {
@@ -625,8 +652,7 @@
 
     renderChatMessages(session);
     renderContacts();
-
-    appEl.className = 'show-chat';
+    setView('chat');
     userInput.focus();
   }
 
@@ -758,16 +784,25 @@
       sessions.push(session);
       renderContacts();
       selectSession(session.id);
-      showToast('✅ Added: ' + p.name);
+      // After 2+ personas, the thread list becomes available (back / sidebar).
+      if (hasMultipleThreads()) {
+        showToast('✅ Added: ' + p.name + ' · threads unlocked');
+      } else {
+        showToast('✅ Added: ' + p.name);
+      }
     };
     reader.readAsText(file);
   }
 
   // ── event listeners ──────────────────────────────────────────
-  addBtn.addEventListener('click',  () => fileInput.click());
+  function openFilePicker() { fileInput.click(); }
+  addBtn.addEventListener('click',  openFilePicker);
+  chatAddBtn.addEventListener('click', openFilePicker);
   fileInput.addEventListener('change', () => loadPersonalityFile(fileInput.files[0]));
   resetBtn.addEventListener('click', resetActiveSession);
-  backBtn.addEventListener('click',  () => { appEl.className = 'show-sidebar'; });
+  backBtn.addEventListener('click',  () => {
+    if (hasMultipleThreads()) setView('sidebar');
+  });
   sendBtn.addEventListener('click',  handleSend);
   userInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -786,8 +821,8 @@
     };
     sessions.push(ebt);
     renderContacts();
-    // Auto-open on desktop; mobile stays on contacts list
-    if (window.innerWidth > 640) selectSession('ebt');
+    // One persona → single-chat only (no thread list). Open EBT immediately.
+    selectSession('ebt');
   })();
 </script>
 </body>
