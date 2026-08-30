@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>ChatEBT</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      --app-height: 100dvh;
+      --accent:       #7e22ce;
+      --accent-light: #a855f7;
+      --accent-bg:    #18101f;
+      --accent-border:#2d1b45;
+    }
+
+    body {
+      background: #0d0d0d;
+      color: #f0f0f0;
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    #app {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      height: var(--app-height);
+      overflow: hidden;
+    }
+
+    /* ─── SIDEBAR ───────────────────────────────────────────── */
+    #sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1a1a1a;
+      background: #0d0d0d;
+    }
+
+    #sidebar-header {
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #sidebar-header h1 {
+      flex: 1;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+    #sidebar-header h1 span { color: #a855f7; }
+
+    #add-btn {
+      background: #7e22ce;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      width: 36px; height: 36px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.1s;
+      line-height: 1;
+      -webkit-user-select: none; user-select: none;
+    }
+    #add-btn:active { background: #a855f7; transform: scale(0.92); }
+
+    #contacts-list { flex: 1; overflow-y: auto; }
+    #contacts-list::-webkit-scrollbar { display: none; }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #141414;
+      transition: background 0.15s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .contact-item:active { background: #181818; }
+    .contact-item.active {
+      background: #18101f;
+      border-left: 3px solid #a855f7;
+      padding-left: 13px;
+    }
+
+    .contact-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-weight: 600; font-size: 0.95rem; color: #f0f0f0; }
+    .contact-preview {
+      font-size: 0.78rem;
+      color: #555;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 3px;
+    }
+
+    /* ─── CHAT AREA ─────────────────────────────────────────── */
+    #chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    #chat-header {
+      width: 100%;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      background: #0d0d0d;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #back-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--accent-light);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 2px 10px 2px 0;
+      line-height: 1;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    #chat-header-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .header-text { flex: 1; min-width: 0; }
+    #active-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: block;
+      line-height: 1.2;
+    }
+    #active-subtitle { font-size: 0.7rem; color: #555; }
+
+    #reset-btn {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 10px;
+      color: #666;
+      font-size: 1rem;
+      padding: 6px 9px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s;
+      -webkit-user-select: none; user-select: none;
+    }
+    #reset-btn:active { color: #fff; border-color: #555; }
+
+    /* ─── EMPTY STATE ───────────────────────────────────────── */
+    #empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #2a2a2a;
+      text-align: center;
+      padding: 24px;
+    }
+    #empty-state .icon { font-size: 3rem; }
+    #empty-state p { font-size: 0.9rem; color: #333; line-height: 1.5; }
+
+    /* ─── MESSAGES ──────────────────────────────────────────── */
+    #chat-window {
+      flex: 1;
+      width: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 20px 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #chat-window::-webkit-scrollbar { display: none; }
+
+    .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
+    .bubble-row.user { flex-direction: row-reverse; }
+
+    .av {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      background: var(--accent);
+    }
+    .av.user-av { background: #2a2a2a; }
+
+    .bubble {
+      max-width: 78%;
+      padding: 11px 15px;
+      border-radius: 18px;
+      font-size: 16px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .bubble.bot {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-bottom-left-radius: 4px;
+      color: #f0f0f0;
+    }
+    .bubble.user {
+      background: var(--accent);
+      border-bottom-right-radius: 4px;
+      color: #fff;
+    }
+
+    .typing-dots { display: flex; gap: 5px; padding: 4px 2px; }
+    .typing-dots span {
+      width: 8px; height: 8px;
+      background: var(--accent-light);
+      border-radius: 50%;
+      animation: tdot 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tdot {
+      0%,60%,100% { transform: translateY(0); opacity:.5; }
+      30%          { transform: translateY(-6px); opacity:1; }
+    }
+
+    /* ─── INPUT ─────────────────────────────────────────────── */
+    #input-area {
+      width: 100%;
+      padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid #1a1a1a;
+      background: #0d0d0d;
+      flex-shrink: 0;
+    }
+
+    #user-input {
+      flex: 1;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 22px;
+      color: #f0f0f0;
+      font-size: 16px;
+      padding: 11px 16px;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      max-height: 110px;
+      line-height: 1.4;
+    }
+    #user-input::placeholder { color: #4a3560; }
+    #user-input:focus { border-color: var(--accent-light); }
+
+    #send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.1rem;
+      width: 46px; height: 46px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.1s;
+      align-self: flex-end;
+      -webkit-user-select: none; user-select: none;
+    }
+    #send-btn:active   { transform: scale(0.88); }
+    #send-btn:disabled { background: #2a2a2a; cursor: default; }
+
+    /* ─── TOAST ─────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #f0f0f0;
+      font-size: 0.82rem;
+      padding: 9px 16px;
+      border-radius: 20px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 100;
+    }
+    #toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { border-color: #7f1d1d; color: #fca5a5; }
+
+    /* ─── MOBILE ────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      #sidebar { width: 100%; }
+      #back-btn { display: flex; align-items: center; }
+
+      #app.show-sidebar #sidebar   { display: flex; }
+      #app.show-sidebar #chat-area { display: none; }
+      #app.show-chat    #sidebar   { display: none; }
+      #app.show-chat    #chat-area { display: flex; }
+    }
+  </style>
+</head>
+<body>
+<div id="app" class="show-sidebar">
+
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <h1>Chat<span>EBT</span></h1>
+      <button id="add-btn" title="Load personality JSON">+</button>
+      <input type="file" id="file-input" accept=".json" style="display:none" />
+    </div>
+    <div id="contacts-list"></div>
+  </aside>
+
+  <main id="chat-area">
+    <header id="chat-header">
+      <button id="back-btn">&#8592;</button>
+      <div id="chat-header-avatar"></div>
+      <div class="header-text">
+        <span id="active-name"></span>
+        <span id="active-subtitle">active now</span>
+      </div>
+      <button id="reset-btn" title="Clear this chat">&#x21BA;</button>
+    </header>
+    <div id="chat-window"></div>
+    <div id="input-area">
+      <textarea id="user-input" rows="1" placeholder="Say something..."></textarea>
+      <button id="send-btn">&#10148;</button>
+    </div>
+  </main>
+
+</div>
+<div id="toast"></div>
+
+<script>
+  const DEFAULT_PERSONALITY = {
+    name:        'EBT',
+    avatar:      '\u{1F92C}',
+    accentColor: '#7e22ce',
+    accentLight: '#a855f7',
+    accentBg:    '#18101f',
+    accentBorder:'#2d1b45',
+    greeting:    'Aye what’s good. Ask me anything. Go ahead. I dare you.',
+    responses: [
+      'shiiiiiieet.',
+      'SHIIIIIIEET.',
+      'shiiiiiieet... \u{1F633}',
+      'shiiiiiiiiiiiiiieet bro.',
+      'shiiiiiiieet, for real??',
+      'man... shiiiiiieet.',
+      'shiiiiiieet homie, that’s wild.',
+      'SHIIIIIIEET — I’m not even gonna lie.',
+      'shiiiiiieet you really said that huh.',
+      'shiiiiiieet… okay. okay okay okay.',
+      '...shiiiiiieet.',
+      'shiiiiiieet I had to read that twice.',
+      'shiiiiiieet bro I cannot \u{1F480}',
+      'shiiiiiieet — I felt that.',
+      'shiiiiiieet and I oop—',
+      'shiiiiiieet fr fr no cap.',
+      'bro… shiiiiiieet.',
+      'shiiiiiieet that’s tuff.',
+      'shiiiiiieet on everything.',
+      'SHIIIIIIEET not you tho \u{1F480}',
+      'aw hell nah you got me FUCKED UP.',
+      'AWW HELL NAH. You got me FUCKED ALL THE WAY UP.',
+      'aw HELL nah, you got me fucked up fr fr.',
+      'nah. NAH. You really got me fucked up right now.',
+      'aw hell nah bro I KNOW you didn’t.',
+      'hell nah you got me fucked up \u{1F480}',
+      'aw nah nah nah — you got me fucked up.',
+      'you got me ALL kinds of fucked up rn.',
+      'AWW HELL NAH not today. You got me fucked up.',
+      'nah for real, you got me fucked up with that.',
+      'aw hell nah… you really said that huh.',
+      'bro. BRO. You got me fucked up.',
+      'aw hell nah — I’m not okay rn.',
+      'you got me COMPLETELY fucked up. Wow.',
+      'aw hell NAH. Delete this.',
+      'nah fam you got me fucked up I KNOW you playin.',
+      'you got me all the way fucked up.',
+      'you foul as hell for that.',
+      'shiiiiiieet… aw hell nah. You got me fucked up.',
+      'AWW HELL NAH — shiiiiiieet bro \u{1F480}',
+      'shiiiiiieet, nah nah nah you got me fucked up.',
+      'aw hell nah… shiiiiiieet I’m done.',
+      'shiiiiiieet. Just… shiiiiiieet. You got me fucked up.',
+      'nah shiiiiiieet fr fr you got me ALL the way fucked up.',
+      'aw hell nah shiiiiiieet what is WRONG with you.',
+      'chile…',
+      'CHILE ANYWAYS…',
+      'bruh. just… bruh.',
+      'BRUH \u{1F480}',
+      'on god?? on GOD??',
+      'no cap that’s wild.',
+      'deadass??',
+      'deadass bro.',
+      'you wildin fr.',
+      'you WILDIN.',
+      'you buggin rn.',
+      'the audacity. THE AUDACITY.',
+      'I’m dead \u{1F480}\u{1F480}\u{1F480}',
+      'I AM DECEASED.',
+      'tf did you just say to me??',
+      'WHO ASKED.',
+      'nobody asked but okay.',
+      'L + ratio.',
+      'bro really said that \u{1F62D}',
+      'stop playin with me.',
+      'STOP PLAYIN.',
+      'you thought you ate with that one huh.',
+      'you did NOT eat.',
+      'oh you thought??',
+      'on my mama that’s wild.',
+      'big facts tho.',
+      'periodt.',
+      'PERIODT.',
+      'bestie no. just… no.',
+      'finna cry rn fr.',
+      'I’m finna catch a case.',
+      'you playing too much.',
+      'you are REALLY playing too much.',
+      'that’s tuff.',
+      'THAT IS TUFF.',
+      'respectfully… shut the fuck up.',
+      'respectfully bro what \u{1F62D}',
+      'issa no from me dawg.',
+      'it’s giving… absolutely nothing.',
+      'it’s giving unhinged and I’m here for it.',
+      'catch me outside.',
+      'catch me OUTSIDE, how bout dat.',
+      'what the fuck is wrong with you fr.',
+      'my guy really said that \u{1F480}',
+      'bro is NOT okay \u{1F480}',
+      'okay but WHY though.',
+      'hold up. HOLD UP.',
+      'wait wait wait wait WAIT.',
+      'say sike right now.',
+      'SAY SIKE.',
+      'you are absolutely cooked.',
+      'done. I’m done. Goodbye.',
+      'ion wanna hear that shit.',
+      'what in the entire fuck.',
+      'I’m calling your mama.',
+      'your mama should’ve taken the phone.',
+      'go to bed bro. right now. go.',
+      'nah you tweaking fr fr.',
+      'we can’t be friends no more.',
+      'that’s giving federal offense.',
+      'this is why nobody invites you nowhere.',
+      'you really said that out loud. to ME.',
+      'bruh said the quiet part LOUD.',
+      'no further questions.',
+      'bro got me tight as fuck rn.',
+      'say that shit again I dare you.',
+      'SAY IT AGAIN.',
+      'that was some bullshit and you know it.',
+      'absolute bullshit. ten out of ten bullshit.',
+      'bro got the NERVE to say that shit.',
+      'nah fuck that and fuck what you said.',
+      'get the fuck outta here.',
+      'you got me fucked up AND sideways.',
+      'bro you gotta be out your damn mind.',
+      'that shit was not it. not even close.',
+      'bro said some dumb ass shit and kept it moving.',
+      'that’s dumb as hell bro.',
+      'oh hell no. oh HELL no.',
+      'nah bro hell no.',
+      'you must got me confused with somebody who gives a fuck.',
+      'bro really woke up today and chose chaos.',
+      'I will not be taking questions at this time.',
+      'next question.',
+    ]
+  };
+
+  // sessions: [{ id, personality, messages: [{role, text}] }]
+  let sessions = [];
+  let activeSessionId = null;
+  let isBotTyping = false;
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  // ── DOM refs ────────────────────────────────────────────────
+  const appEl         = document.getElementById('app');
+  const contactsList  = document.getElementById('contacts-list');
+  const chatWindow    = document.getElementById('chat-window');
+  const userInput     = document.getElementById('user-input');
+  const sendBtn       = document.getElementById('send-btn');
+  const resetBtn      = document.getElementById('reset-btn');
+  const addBtn        = document.getElementById('add-btn');
+  const fileInput     = document.getElementById('file-input');
+  const backBtn       = document.getElementById('back-btn');
+  const headerAvatar  = document.getElementById('chat-header-avatar');
+  const activeName    = document.getElementById('active-name');
+  const toast         = document.getElementById('toast');
+
+  // ── viewport height fix ─────────────────────────────────────
+  function syncHeight() {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+  syncHeight();
+  (window.visualViewport || window).addEventListener('resize', () => {
+    syncHeight();
+    requestAnimationFrame(scrollBottom);
+  });
+
+  // ── audio ────────────────────────────────────────────────────
+  const replySound = new Audio('chater-e-reply.m4a');
+  replySound.preload = 'auto';
+  let audioUnlocked = false;
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    // iOS/Safari require a play() during a user gesture before later playback works
+    replySound.muted = true;
+    const p = replySound.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        replySound.pause();
+        replySound.currentTime = 0;
+        replySound.muted = false;
+        audioUnlocked = true;
+      }).catch(() => {
+        replySound.muted = false;
+      });
+    } else {
+      replySound.pause();
+      replySound.currentTime = 0;
+      replySound.muted = false;
+      audioUnlocked = true;
+    }
+  }
+  function playReplySound() {
+    try {
+      replySound.muted = false;
+      replySound.currentTime = 0;
+      const p = replySound.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) {}
+  }
+
+  // ── toast ────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    clearTimeout(toastTimer);
+    toast.textContent = msg;
+    toast.className   = 'show' + (isError ? ' error' : '');
+    toastTimer = setTimeout(() => { toast.className = ''; }, 3000);
+  }
+
+  // ── contacts list ────────────────────────────────────────────
+  function renderContacts() {
+    contactsList.innerHTML = '';
+    sessions.forEach(session => {
+      const last    = session.messages[session.messages.length - 1];
+      const preview = last ? last.text : 'No messages yet';
+      const p       = session.personality;
+
+      const item = document.createElement('div');
+      item.className = 'contact-item' + (session.id === activeSessionId ? ' active' : '');
+      item.innerHTML =
+        `<div class="contact-avatar" style="background:${p.accentColor || '#7e22ce'}">${p.avatar}</div>` +
+        `<div class="contact-info">` +
+          `<div class="contact-name">${p.name}</div>` +
+          `<div class="contact-preview">${preview.slice(0, 50)}</div>` +
+        `</div>`;
+      item.addEventListener('click', () => selectSession(session.id));
+      contactsList.appendChild(item);
+    });
+  }
+
+  // ── select / switch session ──────────────────────────────────
+  function selectSession(id) {
+    activeSessionId = id;
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+
+    const p    = session.personality;
+    const root = document.documentElement;
+    root.style.setProperty('--accent',        p.accentColor  || DEFAULT_PERSONALITY.accentColor);
+    root.style.setProperty('--accent-light',  p.accentLight  || DEFAULT_PERSONALITY.accentLight);
+    root.style.setProperty('--accent-bg',     p.accentBg     || DEFAULT_PERSONALITY.accentBg);
+    root.style.setProperty('--accent-border', p.accentBorder || DEFAULT_PERSONALITY.accentBorder);
+
+    headerAvatar.textContent = p.avatar;
+    headerAvatar.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+    activeName.textContent = p.name;
+
+    renderChatMessages(session);
+    renderContacts();
+
+    appEl.className = 'show-chat';
+    userInput.focus();
+  }
+
+  // ── render messages ──────────────────────────────────────────
+  function renderChatMessages(session) {
+    chatWindow.innerHTML = '';
+    session.messages.forEach(msg => appendBubble(msg.text, msg.role, session.personality, false));
+    scrollBottom();
+  }
+
+  // ── append a single bubble ───────────────────────────────────
+  function appendBubble(text, role, personality, save = true) {
+    if (save) {
+      const session = sessions.find(s => s.id === activeSessionId);
+      if (session) {
+        session.messages.push({ role, text });
+        renderContacts();
+      }
+    }
+
+    const p   = personality || sessions.find(s => s.id === activeSessionId)?.personality || DEFAULT_PERSONALITY;
+    const row = document.createElement('div');
+    row.className = `bubble-row ${role}`;
+
+    const av = document.createElement('div');
+    av.className = role === 'bot' ? 'av' : 'av user-av';
+    av.textContent = role === 'bot' ? p.avatar : '\u{1F464}';
+    if (role === 'bot') av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = text;
+
+    row.appendChild(av);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+
+  // ── typing indicator ─────────────────────────────────────────
+  function addTypingIndicator(p) {
+    const row = document.createElement('div');
+    row.className = 'bubble-row bot';
+    row.id = 'typing-row';
+    const av = document.createElement('div');
+    av.className = 'av';
+    av.textContent = p.avatar;
+    av.style.background = p.accentColor || DEFAULT_PERSONALITY.accentColor;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bot';
+    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    row.appendChild(av);
+    row.appendChild(bubble);
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-row');
+    if (el) el.remove();
+  }
+
+  function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
+
+  // ── send message ─────────────────────────────────────────────
+  async function handleSend() {
+    if (!activeSessionId || isBotTyping) return;
+    const text = userInput.value.trim();
+    if (!text) return;
+    unlockAudio();
+
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    sendBtn.disabled = true;
+    isBotTyping = true;
+
+    appendBubble(text, 'user', session.personality, true);
+    addTypingIndicator(session.personality);
+
+    await new Promise(r => setTimeout(r, 700 + Math.random() * 1000));
+    removeTypingIndicator();
+
+    const pool = session.personality.responses;
+    const reply = pool[Math.floor(Math.random() * pool.length)];
+    appendBubble(reply, 'bot', session.personality, true);
+    playReplySound();
+
+    isBotTyping = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+
+  // ── reset active session ─────────────────────────────────────
+  function resetActiveSession() {
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+    removeTypingIndicator();
+    isBotTyping = false;
+    sendBtn.disabled = false;
+    session.messages = [];
+    const greeting = session.personality.greeting || DEFAULT_PERSONALITY.greeting;
+    session.messages.push({ role: 'bot', text: greeting });
+    renderChatMessages(session);
+    renderContacts();
+    showToast('\u{1F504} Chat cleared');
+  }
+
+  // ── upload personality JSON ──────────────────────────────────
+  function loadPersonalityFile(file) {
+    if (!file) return;
+    fileInput.value = '';
+    const reader = new FileReader();
+    reader.onload = e => {
+      let parsed;
+      try { parsed = JSON.parse(e.target.result); }
+      catch { showToast('⚠️ Invalid JSON file.', true); return; }
+      if (!Array.isArray(parsed.responses) || parsed.responses.length === 0) {
+        showToast('⚠️ JSON needs a non-empty “responses” array.', true);
+        return;
+      }
+      const p = { ...DEFAULT_PERSONALITY, ...parsed };
+      const session = {
+        id: uid(),
+        personality: p,
+        messages: [{ role: 'bot', text: p.greeting || DEFAULT_PERSONALITY.greeting }]
+      };
+      sessions.push(session);
+      renderContacts();
+      selectSession(session.id);
+      showToast('✅ Added: ' + p.name);
+    };
+    reader.readAsText(file);
+  }
+
+  // ── event listeners ──────────────────────────────────────────
+  addBtn.addEventListener('click',  () => fileInput.click());
+  fileInput.addEventListener('change', () => loadPersonalityFile(fileInput.files[0]));
+  resetBtn.addEventListener('click', resetActiveSession);
+  backBtn.addEventListener('click',  () => { appEl.className = 'show-sidebar'; });
+  sendBtn.addEventListener('click',  handleSend);
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  });
+  userInput.addEventListener('input', () => {
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 110) + 'px';
+  });
+
+  // ── init ─────────────────────────────────────────────────────
+  (function init() {
+    const ebt = {
+      id: 'ebt',
+      personality: { ...DEFAULT_PERSONALITY },
+      messages: [{ role: 'bot', text: DEFAULT_PERSONALITY.greeting }]
+    };
+    sessions.push(ebt);
+    renderContacts();
+    // Auto-open on desktop; mobile stays on contacts list
+    if (window.innerWidth > 640) selectSession('ebt');
+  })();
+</script>
+</body>
+</html>
